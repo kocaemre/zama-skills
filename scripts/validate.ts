@@ -284,6 +284,259 @@ async function runSyncCheck(): Promise<{ changed: string[]; errors: string[] }> 
   return runSync({ check: true });
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Phase 04-06 — auditPhase4Skills (frontmatter + assets + sync markers + grep)
+// ────────────────────────────────────────────────────────────────────────────
+
+interface Phase4SkillSpec {
+  skillMd: string;
+  scripts: string[];
+  templates: string[];
+  requiresDisableModelInvocation: boolean;
+  syncMarkers: string[];
+}
+
+const PHASE4_MANIFEST: Record<string, Phase4SkillSpec> = {
+  contract: {
+    skillMd: 'plugins/zama-skills/skills/contract/SKILL.md',
+    scripts: [
+      'scripts/generate.ts',
+      'scripts/lib/acl-injector.ts',
+      'scripts/lib/cleartext-guard.ts',
+      'scripts/lib/preflight.ts',
+    ],
+    templates: [
+      'assets/templates/contract.sol.tpl',
+      'assets/templates/erc7984.sol.tpl',
+      'assets/templates/votes.sol.tpl',
+    ],
+    requiresDisableModelInvocation: false,
+    syncMarkers: ['@sync:prompt:closing-summary-contract'],
+  },
+  test: {
+    skillMd: 'plugins/zama-skills/skills/test/SKILL.md',
+    scripts: ['scripts/generate.ts', 'scripts/lib/preflight.ts'],
+    templates: [
+      'assets/templates/mock.test.ts.tpl',
+      'assets/templates/sepolia.test.ts.tpl',
+    ],
+    requiresDisableModelInvocation: false,
+    syncMarkers: ['@sync:prompt:closing-summary-test'],
+  },
+  deploy: {
+    skillMd: 'plugins/zama-skills/skills/deploy/SKILL.md',
+    scripts: [
+      'scripts/deploy.ts',
+      'scripts/lib/env-validate.ts',
+      'scripts/lib/sepolia-addresses.ts',
+      'scripts/lib/abi-export.ts',
+      'scripts/lib/preflight.ts',
+    ],
+    templates: [
+      'assets/templates/deploy.ts.tpl',
+      'assets/templates/register-token.ts.tpl',
+    ],
+    requiresDisableModelInvocation: true,
+    syncMarkers: ['@sync:prompt:closing-summary-deploy'],
+  },
+  frontend: {
+    skillMd: 'plugins/zama-skills/skills/frontend/SKILL.md',
+    scripts: ['scripts/generate.ts', 'scripts/lib/preflight.ts'],
+    templates: [
+      'assets/templates/fhe.ts.tpl',
+      'assets/templates/useDecrypted.ts.tpl',
+      'assets/templates/EncryptedInput.tsx.tpl',
+      'assets/templates/fhe-wagmi.ts.tpl',
+    ],
+    requiresDisableModelInvocation: false,
+    syncMarkers: ['@sync:prompt:closing-summary-frontend'],
+  },
+};
+
+const HEX_ADDR_RE = /\b0x[0-9a-fA-F]{40}\b/;
+const ALLOWLIST_PATH_RE = /(?:__fixtures__|\.test\.[tj]sx?$|\.test\.sol$)/;
+
+interface DeprecatedImportsFile {
+  deprecated?: Record<string, { deprecated?: boolean }>;
+  incompatible?: Record<string, { incompatible?: boolean }>;
+}
+
+/** Build the banlist of *deprecated* import identifiers from
+ *  `shared/deprecated-imports.json`. Only the `deprecated` section is import-
+ *  greppable: those packages must NEVER appear in any source. The
+ *  `incompatible` section (e.g. `hardhat@^3`, `ethers@^5`) is version-bound
+ *  and not enforceable at the import-string level — those are caught at
+ *  install time via package.json pin checks elsewhere.
+ */
+function loadDeprecationBanlist(rootDir: string): string[] {
+  const p = path.join(
+    rootDir,
+    'plugins/zama-skills/shared/deprecated-imports.json',
+  );
+  if (!existsSync(p)) return [];
+  let parsed: DeprecatedImportsFile;
+  try {
+    parsed = JSON.parse(readFileSync(p, 'utf8')) as DeprecatedImportsFile;
+  } catch {
+    return [];
+  }
+  return Object.keys(parsed.deprecated ?? {});
+}
+
+/** Grep each deprecated identifier as an import/specifier or JSON dep key.
+ *  Comment lines are exempt so that authors can document the ban itself. */
+function findDeprecationHits(
+  text: string,
+  banlist: string[],
+): Array<{ line: number; token: string }> {
+  const hits: Array<{ line: number; token: string }> = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const raw = lines[i] ?? '';
+    if (isCommentLine(raw)) continue;
+    for (const token of banlist) {
+      const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(
+        `(?:from\\s+['"]${escaped}['"]|require\\(\\s*['"]${escaped}['"]|import\\s+['"]${escaped}['"]|"${escaped}"\\s*:)`,
+      );
+      if (re.test(raw)) hits.push({ line: i + 1, token });
+    }
+  }
+  return hits;
+}
+
+function walkBundleFiles(
+  rootDir: string,
+  skillSlug: string,
+  spec: Phase4SkillSpec,
+): string[] {
+  const skillDir = path.join(rootDir, 'plugins/zama-skills/skills', skillSlug);
+  return walkFiles(skillDir);
+}
+
+/**
+ * Audit Phase 4 skill bundles. Per skill in PHASE4_MANIFEST:
+ *   1. SKILL.md frontmatter: `allowed-tools` present; `disable-model-invocation: true` iff required.
+ *   2. Required scripts + templates exist on disk.
+ *   3. Each `syncMarkers` substring appears in SKILL.md.
+ *   4. Deprecated identifiers (from shared/deprecated-imports.json) absent in
+ *      every script/template (comment lines exempt; init-asset audit reuses).
+ *   5. For deploy only: any `0x[40 hex]` outside test/fixture paths is rejected
+ *      (DEPLOY-03 invariant — Sepolia addresses must be live-fetched).
+ */
+export function auditPhase4Skills(rootDir: string): {
+  ok: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  const banlist = loadDeprecationBanlist(rootDir);
+
+  for (const [slug, spec] of Object.entries(PHASE4_MANIFEST)) {
+    const skillDir = path.join(rootDir, 'plugins/zama-skills/skills', slug);
+    const skillMdAbs = path.join(rootDir, spec.skillMd);
+
+    // 1. SKILL.md exists + frontmatter checks.
+    let skillMdContent: string | null = null;
+    if (!existsSync(skillMdAbs)) {
+      errors.push(`${slug}: missing SKILL.md at ${spec.skillMd}`);
+    } else {
+      try {
+        skillMdContent = readFileSync(skillMdAbs, 'utf8');
+        const fm = parseFrontmatter(skillMdContent);
+        const allowedTools = fm['allowed-tools'];
+        if (typeof allowedTools !== 'string' || allowedTools.trim() === '') {
+          errors.push(`${slug}: SKILL.md frontmatter missing 'allowed-tools'`);
+        }
+        const dmi = fm['disable-model-invocation'];
+        if (spec.requiresDisableModelInvocation) {
+          if (dmi !== true) {
+            errors.push(
+              `${slug}: SKILL.md frontmatter requires 'disable-model-invocation: true' (PLUGIN-03)`,
+            );
+          }
+        }
+      } catch (e) {
+        errors.push(
+          `${slug}: SKILL.md frontmatter parse failed: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+
+    // 2. Required scripts + templates exist on disk.
+    for (const rel of spec.scripts) {
+      const abs = path.join(skillDir, rel);
+      if (!existsSync(abs)) {
+        errors.push(`${slug}: missing script ${rel}`);
+      }
+    }
+    for (const rel of spec.templates) {
+      const abs = path.join(skillDir, rel);
+      if (!existsSync(abs)) {
+        const base = path.basename(rel);
+        errors.push(`${slug}: missing template ${base} (${rel})`);
+      }
+    }
+
+    // 3. Sync markers present in SKILL.md body. Match the canonical opening
+    //    marker form `<!-- @sync:KIND:NAME -->` so prose mentions in the
+    //    transcluded body don't mask a missing marker.
+    if (skillMdContent !== null) {
+      for (const marker of spec.syncMarkers) {
+        // marker like '@sync:prompt:closing-summary-deploy'
+        const openRe = new RegExp(
+          `<!--\\s*${marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*-->`,
+        );
+        if (!openRe.test(skillMdContent)) {
+          errors.push(
+            `${slug}: SKILL.md missing sync marker ${marker}`,
+          );
+        }
+      }
+    }
+
+    // 4 + 5. Walk every file in the bundle; deprecation-grep + (deploy) hex grep.
+    const allFiles = walkBundleFiles(rootDir, slug, spec);
+    for (const abs of allFiles) {
+      const rel = path.relative(rootDir, abs);
+      // Skip our own audit's exclusion paths for hex check.
+      const inAllowlist = ALLOWLIST_PATH_RE.test(rel);
+
+      // Restrict deprecation + hex scanning to file types that could host code.
+      // SKILL.md, .ts, .tsx, .js, .json, .sol, .md, .tpl — basically everything text.
+      let text: string;
+      try {
+        text = readFileSync(abs, 'utf8');
+      } catch {
+        continue;
+      }
+
+      // Deprecation grep (skip nothing — comment-line exemption is per-line inside).
+      const hits = findDeprecationHits(text, banlist);
+      for (const h of hits) {
+        errors.push(
+          `${slug}: deprecated identifier '${h.token}' in ${rel}:${h.line}`,
+        );
+      }
+
+      // Hex address grep — DEPLOY ONLY, outside fixtures/tests.
+      if (slug === 'deploy' && !inAllowlist) {
+        const lines = text.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i += 1) {
+          const line = lines[i] ?? '';
+          if (HEX_ADDR_RE.test(line)) {
+            errors.push(
+              `${slug}: pinned hex address found in ${rel}:${i + 1} — Sepolia addresses must be live-fetched (DEPLOY-03)`,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return { ok: errors.length === 0, errors };
+}
+
+
 
 async function main() {
   const argv = process.argv.slice(2);
@@ -426,6 +679,15 @@ async function main() {
     process.exit(1);
   }
   console.log('✓ Init asset audit passed (required files, @pin keys, deprecation grep)');
+
+  // Phase 04-06: Phase 4 skill bundle audit (frontmatter + assets + sync markers + grep).
+  const phase4Res = auditPhase4Skills(process.cwd());
+  if (!phase4Res.ok) {
+    console.error('\x1b[31m✗ Phase 4 skill audit failed:\x1b[0m');
+    for (const e of phase4Res.errors) console.error('\x1b[31m  - ' + e + '\x1b[0m');
+    process.exit(1);
+  }
+  console.log('✓ Phase 4 skill audit passed (4 skills × frontmatter, assets, sync markers, deprecation/hex grep)');
 }
 
 export { runSyncCheck };

@@ -174,13 +174,107 @@ Every state-write that produces or stores an encrypted handle MUST be followed b
 Writing `state.balance = FHE.add(state.balance, amount)` without `FHE.allowThis(state.balance)` afterwards leaves the contract unable to read its own state next call. This will silently fail downstream.
 <!-- @endsync -->
 
-# /zama-skills:test — Skeleton (Phase 1)
+# /zama-skills:test — Workflow
 
-<!-- TODO: Phase 4 — flesh out FHE test patterns -->
+Generate **two** test files for an existing confidential contract in `packages/contracts/contracts/<Name>.sol`:
 
-FHE test pattern generator. Phase 4 implements:
+1. **`packages/contracts/test/<Name>.test.ts`** — mock unit test using `@fhevm/hardhat-plugin` encrypted-input mock + decrypt assertion + ACL re-decrypt verification.
+2. **`packages/contracts/test/<Name>.sepolia.test.ts`** — Sepolia integration scaffold gated by `network.name`, headed by an HCU revert-risk warning, using `@zama-fhe/relayer-sdk` for real encryption.
 
-- Mock test pattern (`@fhevm/hardhat-plugin` encrypted-input mock + decrypt)
-- Sepolia integration test scaffold (real deploy + real encrypted input)
-- `FHE.allowThis` verification (post-call decrypt confirmation)
-- HCU budget warning (mock won't catch overruns; Sepolia reverts)
+> **HCU callout:** Mock tests do NOT enforce HCU (Homomorphic Compute Units). Sepolia enforces 20M HCU/tx + 5M depth. **Always run the Sepolia integration test before mainnet considerations** — a contract that passes mock tests can revert on Sepolia under HCU pressure.
+
+## Step 1 — Pre-flight
+
+Run the pre-flight script. Refuses to continue if the workspace is missing, ethers v5 is detected, or the target contract file does not exist:
+
+```bash
+tsx ${CLAUDE_SKILL_DIR}/scripts/lib/preflight.ts
+```
+
+Failure modes (each prints the exact remedy):
+
+- `packages/contracts/contracts/` not found → "Run /zama-init first to scaffold the project."
+- `ethers` ^5 in `packages/contracts/package.json` → "ethers v5 detected; /zama-test requires ethers v6"
+- `@typechain/ethers-v5` present → same refusal
+
+## Step 2 — Pick the target contract
+
+Use `AskUserQuestion` to ask which contract to test. If exactly one `.sol` exists in `packages/contracts/contracts/`, surface it as the recommended default but still confirm.
+
+```
+Question: Which contract should I generate tests for?
+Options:
+  - <Name1>.sol (auto-detected)
+  - <Name2>.sol
+  - Other (type a name)
+```
+
+Optionally ask which state-write functions to cover (auto-detect via `Grep` for `function` declarations in the `.sol`):
+
+```
+Question: Which state-write functions should the mock test cover? (Enter to use auto-detected list.)
+```
+
+## Step 3 — Generate the two test files
+
+```bash
+tsx ${CLAUDE_SKILL_DIR}/scripts/generate.ts --contract <Name>
+```
+
+Add `--force` to overwrite existing test files (default: abort if either output already exists).
+
+The generator reads `packages/contracts/contracts/<Name>.sol`, detects the first function with an `external` encrypted-input parameter (`externalEuint*` / `externalEbool` + `bytes` proof), and substitutes both templates.
+
+## Step 4 — Closing summary
+
+After generation, print:
+
+```
+✓ Generated:
+  - packages/contracts/test/<Name>.test.ts        (mock — runs under `pnpm hardhat test`)
+  - packages/contracts/test/<Name>.sepolia.test.ts (integration — runs under `pnpm hardhat test --network sepolia`)
+
+ACL re-decrypt assertions: 1 per file
+HCU header included in: <Name>.sepolia.test.ts
+
+⚠ Mock tests do NOT enforce HCU. The Sepolia integration test is gated by
+   `if (network.name !== "sepolia") this.skip();` — run it before mainnet.
+
+Next: run /zama-deploy to deploy to Sepolia.
+```
+
+## Hard rules
+
+- **NEVER emit ethers v5 syntax** — no `BigNumber.from`, no `ethers.utils.*`, no `ethers.providers.*`. Use ethers v6 (`hre.ethers`, `BigInt(...)` literals, `Provider` from `ethers`).
+- **NEVER import `fhevmjs`.** Use `@zama-fhe/relayer-sdk` (frontend) or `fhevm` from `hardhat` (mock).
+- **Both files MUST contain an ACL re-decrypt assertion.** The pattern: after a state-write call, decrypt the handle back via the same signer. If `FHE.allowThis` or `FHE.allow(handle, signer)` was missing, decrypt throws — turning a silent ACL bug into a loud test failure.
+- **Output paths are hard-coded** to `packages/contracts/test/`. Do not write tests anywhere else.
+- **Contract name must be PascalCase.** Reject names with slashes, dots, or path traversal.
+
+
+## Closing Summary
+
+<!-- @sync:prompt:closing-summary-test -->
+<!-- closing-summary-test.md
+     Rendered after /zama-test finishes. Substituted via
+     `renderClosingSummary('test', vars)` from skills/_lib/closing-summary.ts
+     and transcluded into SKILL.md via `@sync:prompt:closing-summary-test`.
+     Placeholder syntax: {{key}}. -->
+
+## ✅ /zama-test complete — tests for `{{name}}`
+
+### What was generated
+
+- **Mock test (unit):** `{{mockPath}}`
+- **Sepolia test (integration):** `{{sepoliaPath}}`
+- **ACL re-decrypt assertions:** `{{aclAssertCount}}`
+- **HCU revert risk:** noted in Sepolia test header (relayer can revert if a tx exceeds the HCU budget; see comments)
+
+### Pattern coverage
+
+Both files use the canonical **encrypt-input → call → await decrypt → assert** flow. Mock tests use `@fhevm/hardhat-plugin` mock-utils for fast in-process decryption; Sepolia tests use the real relayer.
+
+> context7 verified the test API surface against `/zama-ai/fhevm-hardhat-template` — pinned versions match `@fhevm/hardhat-plugin@^0.4.2`.
+
+### Next: run `/zama-deploy` to ship `{{name}}` to Sepolia.
+<!-- @endsync -->
