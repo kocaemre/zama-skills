@@ -8,18 +8,18 @@ import {FHE, euint8, euint16, euint32, euint64, ebool, eaddress, externalEuint64
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";
 
-/// @title {{NAME}} — confidential ERC-7984 token
-/// @notice Extends OpenZeppelin's ERC7984 base. Decryption path: {{DECRYPTION_PATH}}.
+/// @title Token — confidential ERC-7984 token
+/// @notice Extends OpenZeppelin's ERC7984 base. Decryption path: user.
 /// @dev    `ZamaEthereumConfig` wires the FHE coprocessor at construction.
 ///         Note: pre-0.11 the export was named `SepoliaConfig`.
-contract {{NAME}} is ERC7984, ZamaEthereumConfig {
+contract Token is ERC7984, ZamaEthereumConfig {
     constructor(string memory name_, string memory symbol_, string memory uri_)
         ERC7984(name_, symbol_, uri_)
     {}
 
-{{STATE_DECLS}}
+    // No state schema.
 
-{{SETTERS}}
+    // No setters generated.
 
-{{GETTERS}}
+    // No getters generated.
 }

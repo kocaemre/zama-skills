@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "created_at": "2026-05-03T20:27:04.000Z",
+  "use_case": "erc7984-confidential-token",
+  "skill_versions": {
+    "init": "14d9879a8e1c01872d2712d8c30e55745c2fab34",
+    "contract": "713d063bc736c44a07446f9e0859c0239556c341",
+    "test": "713d063bc736c44a07446f9e0859c0239556c341",
+    "deploy": "713d063bc736c44a07446f9e0859c0239556c341",
+    "frontend": "713d063bc736c44a07446f9e0859c0239556c341"
+  },
+  "pinned_versions_sha": "b9957b4b0a2c3ec9e0dd5edae25bf80522a5c129dd84de0f648d39510d0040c5",
+  "scaffold_inputs": {
+    "contract_name": "Token",
+    "base": "erc7984",
+    "decryption_path": "user",
+    "with_wagmi": true
+  },
+  "skill_invocation_order": [
+    "zama-init",
+    "zama-contract",
+    "zama-test",
+    "zama-frontend"
+  ]
+}

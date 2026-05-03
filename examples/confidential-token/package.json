@@ -1,5 +1,5 @@
 {
-  "name": "{{USE_CASE}}-dapp",
+  "name": "confidential-token-dapp",
   "private": true,
   "version": "0.1.0",
   "engines": { "node": ">=20" },

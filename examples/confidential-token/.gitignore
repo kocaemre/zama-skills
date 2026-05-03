@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.local
+.env.deploy.local
+artifacts/
+cache/
+typechain-types/
+coverage/
+.DS_Store
+dist/
+.vite/
+.next/
+out/
+deployments/localhost/
+fhevmTemp/
