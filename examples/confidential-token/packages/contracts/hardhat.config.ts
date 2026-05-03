@@ -12,15 +12,25 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 // Load .env.deploy.local FIRST (gitignored, holds the funded deploy key) so
-// it takes precedence over the public .env. Try a few candidate locations:
-// 1) examples/confidential-token/.env.deploy.local (per-example)
-// 2) <repo-root>/.env.deploy.local (single shared deploy key for all examples)
-const candidates = [
-  resolve(__dirname, "../../.env.deploy.local"),
-  resolve(__dirname, "../../../../.env.deploy.local"),
-  resolve(__dirname, "../../../../../.env.deploy.local"),
-  resolve(__dirname, "../../../../../../.env.deploy.local"),
-];
+// it takes precedence over the public .env.
+//
+// Resolution order:
+//   1) DEPLOY_ENV_FILE env var (explicit override — wins always)
+//   2) examples/confidential-token/.env.deploy.local (per-example, the standard)
+//   3) walk upward from this file, looking in each parent dir for
+//      `.env.deploy.local` (handles worktrees, monorepos, repo-root placement)
+const candidates: string[] = [];
+if (process.env.DEPLOY_ENV_FILE) candidates.push(process.env.DEPLOY_ENV_FILE);
+candidates.push(resolve(__dirname, "../../.env.deploy.local"));
+{
+  let dir = __dirname;
+  for (let i = 0; i < 10; i++) {
+    candidates.push(resolve(dir, ".env.deploy.local"));
+    const parent = resolve(dir, "..");
+    if (parent === dir) break;
+    dir = parent;
+  }
+}
 for (const p of candidates) {
   if (existsSync(p)) {
     dotenv.config({ path: p });
