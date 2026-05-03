@@ -97,15 +97,15 @@ describe("loadVersions schema validation", () => {
       }),
     );
     const v = loadVersions(good);
-    expect(v.packages.foo.version).toBe("^1.0.0");
+    expect(v.packages.foo?.version).toBe("^1.0.0");
   });
 });
 
 describe("loadDeprecated schema validation", () => {
   it("loads canonical deprecated-imports.json", () => {
     const d = loadDeprecated();
-    expect(d.deprecated.fhevmjs.replaces).toBe("@zama-fhe/relayer-sdk");
-    expect(d.incompatible["hardhat@^3"].useInstead).toBe("hardhat@^2.28.4");
+    expect(d.deprecated.fhevmjs?.replaces).toBe("@zama-fhe/relayer-sdk");
+    expect(d.incompatible["hardhat@^3"]?.useInstead).toBe("hardhat@^2.28.4");
   });
 });
 
