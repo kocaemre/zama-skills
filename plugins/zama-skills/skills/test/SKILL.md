@@ -5,6 +5,29 @@ when_to_use: Trigger phrases include "test fhevm", "mock encrypted input", "decr
 allowed-tools: Read Write Edit Glob Grep Bash(npm test*) Bash(npx hardhat *) Bash(npm run *) WebFetch
 ---
 
+## Documentation Authority
+
+<!-- @sync:shared:context7-query -->
+<!-- @endsync -->
+
+## Deprecation Guardrails
+
+<!-- @sync:prompt:anti-deprecation -->
+<!-- @endsync -->
+
+<!-- @sync:snippet:deprecation-guard -->
+<!-- @endsync -->
+
+## Pinned Versions
+
+<!-- @sync:snippet:versions-table -->
+<!-- @endsync -->
+
+## ACL Pattern Reminder
+
+<!-- @sync:snippet:acl-tip -->
+<!-- @endsync -->
+
 # /zama-skills:test — Skeleton (Phase 1)
 
 <!-- TODO: Phase 4 — flesh out FHE test patterns -->

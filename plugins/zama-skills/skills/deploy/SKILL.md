@@ -6,6 +6,34 @@ disable-model-invocation: true
 allowed-tools: Read Write Bash(npx hardhat *) Bash(npm run *) Bash(node *) WebFetch
 ---
 
+## Documentation Authority
+
+<!-- @sync:shared:context7-query -->
+<!-- @endsync -->
+
+## Deprecation Guardrails
+
+<!-- @sync:prompt:anti-deprecation -->
+<!-- @endsync -->
+
+<!-- @sync:snippet:deprecation-guard -->
+<!-- @endsync -->
+
+## Pinned Versions
+
+<!-- @sync:snippet:versions-table -->
+<!-- @endsync -->
+
+## Sepolia Setup
+
+<!-- @sync:snippet:sepolia-faucet -->
+<!-- @endsync -->
+
+## Closing Summary
+
+<!-- @sync:prompt:closing-summary -->
+<!-- @endsync -->
+
 # /zama-skills:deploy — Skeleton (Phase 1)
 
 <!-- TODO: Phase 4 — flesh out Sepolia deploy + verify + registry workflow -->

@@ -6,6 +6,34 @@ context: fork
 allowed-tools: Bash(git *) Bash(npm *) Bash(npx *) Bash(mkdir *) Bash(cp *) Read Write Edit Glob Grep WebFetch
 ---
 
+## Documentation Authority
+
+<!-- @sync:shared:context7-query -->
+<!-- @endsync -->
+
+## Deprecation Guardrails
+
+<!-- @sync:prompt:anti-deprecation -->
+<!-- @endsync -->
+
+<!-- @sync:snippet:deprecation-guard -->
+<!-- @endsync -->
+
+## Pinned Versions
+
+<!-- @sync:snippet:versions-table -->
+<!-- @endsync -->
+
+## Sepolia Setup
+
+<!-- @sync:snippet:sepolia-faucet -->
+<!-- @endsync -->
+
+## Closing Summary
+
+<!-- @sync:prompt:closing-summary -->
+<!-- @endsync -->
+
 # /zama-skills:init — Skeleton (Phase 1)
 
 <!-- TODO: Phase 3 — flesh out scaffolding workflow -->

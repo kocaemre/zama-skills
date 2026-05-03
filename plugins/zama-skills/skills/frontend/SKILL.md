@@ -5,6 +5,29 @@ when_to_use: Trigger phrases include "fhevm frontend", "relayer sdk", "useDecryp
 allowed-tools: Read Write Edit Glob Grep Bash(npm *) Bash(npx *) WebFetch
 ---
 
+## Documentation Authority
+
+<!-- @sync:shared:context7-query -->
+<!-- @endsync -->
+
+## Deprecation Guardrails
+
+<!-- @sync:prompt:anti-deprecation -->
+<!-- @endsync -->
+
+<!-- @sync:snippet:deprecation-guard -->
+<!-- @endsync -->
+
+## Pinned Versions
+
+<!-- @sync:snippet:versions-table -->
+<!-- @endsync -->
+
+## Decryption Paths
+
+<!-- @sync:prompt:decryption-paths -->
+<!-- @endsync -->
+
 # /zama-skills:frontend — Skeleton (Phase 1)
 
 <!-- TODO: Phase 4 — flesh out frontend integration patterns -->

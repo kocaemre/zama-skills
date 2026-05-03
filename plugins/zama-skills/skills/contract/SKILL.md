@@ -5,6 +5,34 @@ when_to_use: Trigger phrases include "write fhevm contract", "confidential token
 allowed-tools: Read Write Edit Glob Grep Bash(npm *) Bash(npx hardhat *) WebFetch
 ---
 
+## Documentation Authority
+
+<!-- @sync:shared:context7-query -->
+<!-- @endsync -->
+
+## Deprecation Guardrails
+
+<!-- @sync:prompt:anti-deprecation -->
+<!-- @endsync -->
+
+<!-- @sync:snippet:deprecation-guard -->
+<!-- @endsync -->
+
+## Pinned Versions
+
+<!-- @sync:snippet:versions-table -->
+<!-- @endsync -->
+
+## ACL Pattern Reminder
+
+<!-- @sync:snippet:acl-tip -->
+<!-- @endsync -->
+
+## Decryption Paths
+
+<!-- @sync:prompt:decryption-paths -->
+<!-- @endsync -->
+
 # /zama-skills:contract — Skeleton (Phase 1)
 
 <!-- TODO: Phase 4 — flesh out confidential contract authoring patterns -->
