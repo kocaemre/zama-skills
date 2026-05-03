@@ -98,7 +98,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Plugin Foundation + CI | 0/0 | Not started | - |
+| 1. Plugin Foundation + CI | 4/5 | In progress | 01-04 done 2026-05-03 |
 | 2. Shared Infrastructure | 0/0 | Not started | - |
 | 3. /zama-init End-to-End [CRITICAL PATH] | 0/0 | Not started | - |
 | 4. Other 4 Skills | 0/0 | Not started | - |

@@ -12,7 +12,7 @@
 - [ ] **PLUGIN-03**: `/zama-deploy` skill'inde `disable-model-invocation: true` (otonom deploy önleme)
 - [ ] **PLUGIN-04**: Her skill'de `allowed-tools` whitelist (permission prompt baskısı yok)
 - [ ] **PLUGIN-05**: `npx zama-skills install` ile alternatif kurulum yolu (npm package)
-- [ ] **PLUGIN-06**: Plugin schema validasyonu CI'da koşar (zod), `npm publish` öncesi yeşil zorunlu
+- [x] **PLUGIN-06**: Plugin schema validasyonu CI'da koşar (zod), `npm publish` öncesi yeşil zorunlu
 
 ### Shared Infrastructure (SHARED)
 
@@ -116,7 +116,7 @@ Roadmap created 2026-05-03. All 41 v1 requirements mapped to exactly one phase.
 | PLUGIN-03 | Phase 1 | Pending |
 | PLUGIN-04 | Phase 1 | Pending |
 | PLUGIN-05 | Phase 6 | Pending |
-| PLUGIN-06 | Phase 1 | Pending |
+| PLUGIN-06 | Phase 1 | Complete (01-04) |
 | SHARED-01 | Phase 2 | Pending |
 | SHARED-02 | Phase 2 | Pending |
 | SHARED-03 | Phase 2 | Pending |
