@@ -39,7 +39,12 @@
   2. A SKILL.md containing `<!-- include: ../../shared/context7-query.md -->` is expanded inline by `scripts/build.mjs` so the published artifact contains no transclusion markers.
   3. Adding a new entry to `shared/deprecated-imports.json` (e.g., `fhevmjs`) is the only file change needed for the future D3 hook to enforce it.
   4. `shared/prompts/{anti-deprecation,closing-summary,decryption-paths}.md` exist and are referenced by at least one skill via transclusion marker.
-**Plans**: TBD
+**Plans**: 5 plans
+  - [ ] 02-01-pinned-versions-PLAN.md — pinned-versions.json + deprecated-imports.json + versions.ts helper (zod schema)
+  - [ ] 02-02-shared-content-PLAN.md — context7-query.md + 4 snippets + 3 prompt fragments
+  - [ ] 02-03-build-script-PLAN.md — markers.ts parser + build.ts sync engine + generic.ts generator
+  - [ ] 02-04-skill-markers-PLAN.md — insert sync markers in 5 SKILL.md files; materialize via build script; commit generic/*.md
+  - [ ] 02-05-validate-ci-PLAN.md — extend validate.ts with runSyncCheck; add pnpm sync / sync:check scripts; verify CI
 
 ### Phase 3: `/zama-init` End-to-End [CRITICAL PATH]
 **Goal**: A user in an empty directory runs `/zama-init` in Claude Code, picks a use-case, and ends with a working `pnpm install` + `pnpm hardhat compile` green project pinned to non-deprecated fhEVM versions.
@@ -52,7 +57,14 @@
   3. Generated `.env.example` contains all required keys (Sepolia RPC URL, mnemonic, Etherscan API key, relayer URL, registry address) with comments explaining each.
   4. Closing summary message lists exactly what was installed, the next 4 skills to run (compile/test/deploy/frontend) with what each does, and a clickable MetaMask Sepolia network-add deep link (`https://chainid.network/?...`).
   5. Generated `package.json` contains zero deprecated packages (grepped post-scaffold) — versions match `shared/pinned-versions.json` exactly.
-**Plans**: TBD
+**Plans**: 7 plans
+  - [ ] 03-01-skill-body-PLAN.md — Author full /zama-init workflow body in SKILL.md (preserves Phase 2 sync markers)
+  - [ ] 03-02-asset-templates-PLAN.md — 13 .tpl template files (root + contracts + frontend) with @pin: placeholders
+  - [ ] 03-03-seed-contracts-PLAN.md — 4 seed Solidity contracts (token/voting/auction/custom) + register-token.ts deferred script
+  - [ ] 03-04-scaffold-runtime-PLAN.md — scaffold.ts orchestrator: materialize templates, run install+compile, post-grep deprecation guard
+  - [ ] 03-05-helpers-PLAN.md — preflight.ts (Node/pnpm/network checks) + closing-summary.ts (markdown render)
+  - [ ] 03-06-tests-smoke-PLAN.md — vitest unit tests for all helpers + opt-in integration smoke harness (ZAMA_INIT_SMOKE=1)
+  - [ ] 03-07-validate-extension-PLAN.md — extend scripts/validate.ts with auditInitAssets (required-files + @pin keys + deprecation grep)
 
 ### Phase 4: Other 4 Skills (`/zama-contract`, `/zama-test`, `/zama-deploy`, `/zama-frontend`)
 **Goal**: A user with a `/zama-init`'d project can invoke each of the remaining 4 skills and get correct, ACL-safe, deprecation-free, deploy-ready output that handles the 3 decryption paths and HCU constraints correctly.
@@ -99,8 +111,8 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Plugin Foundation + CI | 4/5 | In progress | 01-04 done 2026-05-03 |
-| 2. Shared Infrastructure | 0/0 | Not started | - |
-| 3. /zama-init End-to-End [CRITICAL PATH] | 0/0 | Not started | - |
+| 2. Shared Infrastructure | 0/5 | Planned | - |
+| 3. /zama-init End-to-End [CRITICAL PATH] | 0/7 | Planned | - |
 | 4. Other 4 Skills | 0/0 | Not started | - |
 | 5. Reference Example dApp | 0/0 | Not started | - |
 | 6. Distribution + Submission | 0/0 | Not started | - |
