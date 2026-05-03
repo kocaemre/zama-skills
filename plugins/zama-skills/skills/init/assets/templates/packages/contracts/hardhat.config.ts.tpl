@@ -11,6 +11,21 @@ import * as dotenv from "dotenv";
 
 dotenv.config({ path: "../../.env" });
 
+// WR-05: detect whether the user is targeting Sepolia, and if so require
+// MNEMONIC. Throwing at config load time gives a pointed error — passing
+// `accounts: []` is technically valid hardhat config but produces an
+// opaque "no signer for sepolia" failure at deploy time.
+const isSepoliaTarget =
+  process.argv.includes("sepolia") ||
+  process.argv.includes("--network") &&
+    process.argv[process.argv.indexOf("--network") + 1] === "sepolia";
+
+if (isSepoliaTarget && !process.env.MNEMONIC) {
+  throw new Error(
+    "MNEMONIC missing in .env — copy .env.example to .env and fill it before running against sepolia.",
+  );
+}
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "<!-- @pin:solc -->",
