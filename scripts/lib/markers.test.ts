@@ -95,9 +95,24 @@ describe("replaceAllMarkers", () => {
     expect(once).toBe(twice);
   });
 
-  it("throws if iteration cap exceeded (cycle)", () => {
+  it("throws if per-marker visit cap exceeded (cycle)", () => {
     let i = 0;
     const t = `<!-- @sync:snippet:a -->x<!-- @endsync -->`;
     expect(() => replaceAllMarkers(t, () => `gen${i++}`)).toThrow(MarkerError);
+  });
+
+  it("does not false-positive cycle on documents with many markers", () => {
+    // 250 distinct markers — well above the old MAX_ITERATIONS=100 budget.
+    const parts: string[] = [];
+    for (let i = 0; i < 250; i++) {
+      parts.push(`<!-- @sync:snippet:m${i} -->stale<!-- @endsync -->`);
+    }
+    const t = parts.join("\n");
+    const out = replaceAllMarkers(t, (_kind, name) => `RESOLVED-${name}`);
+    expect(out).toContain("RESOLVED-m0");
+    expect(out).toContain("RESOLVED-m249");
+    // Idempotent on second pass.
+    const twice = replaceAllMarkers(out, (_kind, name) => `RESOLVED-${name}`);
+    expect(twice).toBe(out);
   });
 });

@@ -36,7 +36,8 @@ export class MarkerError extends Error {
 const OPEN_RE = /<!--\s*@sync:(snippet|prompt|shared):([a-zA-Z0-9_\-]+)\s*-->/g;
 const NESTED_OPEN_RE = /<!--\s*@sync:(?:snippet|prompt|shared):/;
 const CLOSE_TOKEN = "<!-- @endsync -->";
-const MAX_ITERATIONS = 100;
+/** Safety bound on per-marker resolution attempts; unrelated to total marker count. */
+const MAX_PER_MARKER_VISITS = 4;
 
 export function parseMarkers(text: string): Marker[] {
   const markers: Marker[] = [];
@@ -93,30 +94,54 @@ export function replaceMarker(
 }
 
 /**
- * Iteratively resolve every marker via the resolver callback. Re-parses after each
- * replacement (indices shift). Caps at 100 iterations to detect cycles.
+ * Resolve every marker via the resolver callback in a single reverse-order pass.
+ *
+ * Cycle detection is per-marker: each (kind,name) is resolved at most a small
+ * number of times. This decouples cycle detection from marker count, so a
+ * document with hundreds of distinct markers no longer false-positives. A real
+ * cycle (resolver output that itself contains the same marker) trips the
+ * per-marker visit cap.
  */
 export function replaceAllMarkers(
   text: string,
   resolver: (kind: MarkerKind, name: string) => string,
 ): string {
+  // Per-marker visit counts — keyed by `${kind}:${name}`.
+  const visits = new Map<string, number>();
   let out = text;
-  for (let i = 0; i < MAX_ITERATIONS; i++) {
+  // Outer loop bounds total work but is not the cycle-detection signal.
+  // Each iteration replaces every marker present at parse time in reverse
+  // order (so offsets remain valid). We re-parse afterward to surface any
+  // markers introduced by resolver bodies; the per-marker visit cap fires
+  // if the same marker keeps re-appearing (true cycle).
+  // Hard ceiling on outer rounds — far beyond plausible nesting depth.
+  const MAX_ROUNDS = 32;
+  for (let round = 0; round < MAX_ROUNDS; round++) {
     const ms = parseMarkers(out);
-    let changed = false;
-    for (const mk of ms) {
+    if (ms.length === 0) return out;
+    // Track whether any marker actually needed replacing this round.
+    let mutated = false;
+    // Replace in reverse order so prior offsets stay valid as we splice.
+    for (let i = ms.length - 1; i >= 0; i--) {
+      const mk = ms[i]!;
+      const key = `${mk.kind}:${mk.name}`;
+      const visited = visits.get(key) ?? 0;
+      if (visited >= MAX_PER_MARKER_VISITS) {
+        throw new MarkerError(
+          `Possible cycle in resolver output for marker ${key} (visited ${visited} times)`,
+        );
+      }
+      visits.set(key, visited + 1);
       const desired = resolver(mk.kind, mk.name);
       const wrapped = `\n${desired.trim()}\n`;
       if (mk.currentBody !== wrapped) {
-        out =
-          out.slice(0, mk.openEnd) + wrapped + out.slice(mk.closeStart);
-        changed = true;
-        break;
+        out = out.slice(0, mk.openEnd) + wrapped + out.slice(mk.closeStart);
+        mutated = true;
       }
     }
-    if (!changed) return out;
+    if (!mutated) return out;
   }
   throw new MarkerError(
-    "replaceAllMarkers exceeded 100 iterations — possible cycle in resolver output",
+    "replaceAllMarkers exceeded resolution rounds — possible cycle in resolver output",
   );
 }
