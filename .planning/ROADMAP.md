@@ -97,12 +97,12 @@
   3. The Vercel URL printed in `examples/confidential-token/README.md` loads, allows MetaMask connection on Sepolia, accepts an encrypted input, submits a tx, and displays the user-decrypted result via the `useDecrypted` hook.
   4. CI smoke-diff job compares fresh `/zama-init token` output against `examples/confidential-token/` key files (`package.json` deps, `hardhat.config.ts`) and passes — confirming the example didn't drift from skill output.
 **Plans**: 6 plans
-  - [ ] 05-01-scaffold-from-skills-PLAN.md — dogfood /zama-* skills into examples/confidential-token/ + .gsd-snapshot.json
-  - [ ] 05-02-nextjs-shadcn-shell-PLAN.md — Next.js 15 App Router + shadcn/ui + wagmi v2 + RainbowKit shell
-  - [ ] 05-03-magic-ui-screens-PLAN.md — Hero + BalanceCard (4-state) + MintButton + TransferForm via Magic MCP
-  - [ ] 05-04-deploy-sepolia-PLAN.md — deploy + Etherscan verify + Confidential Token Registry register
-  - [ ] 05-05-readme-and-vercel-prep-PLAN.md — hero README + Vercel binding doc + root README link
-  - [ ] 05-06-ci-smoke-diff-PLAN.md — GitHub Actions smoke-diff against fresh skill output
+  - [x] 05-01-scaffold-from-skills-PLAN.md — dogfood /zama-* skills into examples/confidential-token/ + .gsd-snapshot.json
+  - [x] 05-02-nextjs-shadcn-shell-PLAN.md — Next.js 15 App Router + shadcn/ui + wagmi v2 + RainbowKit shell
+  - [x] 05-03-magic-ui-screens-PLAN.md — Hero + BalanceCard (4-state) + MintButton + TransferForm via Magic MCP
+  - [x] 05-04-deploy-sepolia-PLAN.md — deploy + Etherscan verify + Confidential Token Registry register
+  - [x] 05-05-readme-and-vercel-prep-PLAN.md — hero README + Vercel binding doc + root README link
+  - [x] 05-06-ci-smoke-diff-PLAN.md — GitHub Actions smoke-diff against fresh skill output
 **UI hint**: yes
 
 ### Phase 6: Distribution + Submission
