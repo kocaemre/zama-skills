@@ -1,21 +1,23 @@
-// Temporary placeholder page — Plan 03 replaces this with the Magic UI hero,
-// balance card, mint, and transfer screens. For now it just confirms the
-// dark-mode shell renders and the Connect button mounts.
-
+import { Hero } from "@/components/Hero";
 import { Connect } from "@/components/Connect";
+import { BalanceCard } from "@/components/BalanceCard";
+
+// Disable static prerender — wagmi + RainbowKit's WalletConnect connector
+// touches `indexedDB` / `window` at module init, which is not available in
+// the Next.js server runtime. `force-dynamic` defers rendering to the
+// client, which is fine for a single-page dApp.
+export const dynamic = "force-dynamic";
 
 export default function Page() {
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <div className="container flex min-h-screen flex-col items-center justify-center gap-6 py-12 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight">
-          Confidential Demo Token
-        </h1>
-        <p className="max-w-prose text-muted-foreground">
-          Shell ready. Plan 03 will mount the balance card, mint, and transfer
-          flows here.
-        </p>
-        <Connect />
+      <Hero />
+      <div className="container mx-auto grid gap-6 px-4 py-8 md:grid-cols-2">
+        <div className="space-y-6">
+          <Connect />
+          <BalanceCard />
+        </div>
+        {/* Mint + Transfer columns mounted in Task 2 */}
       </div>
     </main>
   );
