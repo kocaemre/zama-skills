@@ -44,6 +44,7 @@
     "sync": "tsx scripts/build.ts",
     "sync:check": "tsx scripts/build.ts --check",
     "test": "vitest run --passWithNoTests",
+    "test:smoke": "ZAMA_INIT_SMOKE=1 vitest run tests/integration --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "cli": "tsx src/cli/index.ts"
   },
