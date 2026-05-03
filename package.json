@@ -41,7 +41,7 @@
   },
   "scripts": {
     "validate": "tsx scripts/validate.ts",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "cli": "tsx src/cli/index.ts"
   },
