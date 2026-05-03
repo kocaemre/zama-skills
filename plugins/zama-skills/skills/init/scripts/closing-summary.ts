@@ -14,9 +14,10 @@
  *   - renderClosingSummary(manifest, ctx) => string  (pure)
  *   - CLI shim: --manifest <path> | stdin, --use-case <name>, --shared-dir <path>
  *
- * NOTE: The `ScaffoldManifest` type below is duplicated here on purpose. The
- * shared `scripts/lib/manifest.ts` is owned by Plan 03-04 (same wave). Once
- * 03-04 lands, the import can be swapped for `./lib/manifest.js`.
+ * NOTE: The canonical `ScaffoldManifest` type lives in `./lib/manifest.ts`
+ * (Plan 03-04). We narrow the manifest's strongly-typed shape into the
+ * loose form consumed by this renderer to keep backward compatibility with
+ * any caller that still emits the older `filesWritten: string[]` form.
  */
 
 import { readFileSync } from "node:fs";
@@ -24,21 +25,52 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { argv, exit, stdin, stdout } from "node:process";
 
-/** Result of one shell command run during scaffold. */
+import type {
+  ScaffoldManifest as CanonicalScaffoldManifest,
+  CommandResult as CanonicalCommandResult,
+} from "./lib/manifest.js";
+
+/** Result of one shell command run during scaffold (renderer-local shape). */
 export interface CommandResult {
   cmd: string;
   ok: boolean;
   durationMs?: number;
 }
 
-/** Manifest produced by the scaffold step (03-04). */
+/**
+ * Manifest shape this renderer consumes. We accept either the canonical
+ * 03-04 `ScaffoldManifest` (filesWritten as `{path,bytes}[]`) or the
+ * legacy `filesWritten: string[]` form — `coerceManifest` normalizes.
+ */
 export interface ScaffoldManifest {
-  /** Absolute or relative paths of every file created or modified. */
   filesWritten: string[];
-  /** Commands the skill executed (install/compile/etc.) with status. */
   commandsRan: CommandResult[];
-  /** Optional: scaffold target directory (e.g. "./voting-dapp"). */
   scaffoldDir?: string;
+}
+
+/** Normalize a canonical or legacy manifest into the renderer-local shape. */
+export function coerceManifest(
+  raw: CanonicalScaffoldManifest | ScaffoldManifest,
+): ScaffoldManifest {
+  const files: string[] = Array.isArray(raw.filesWritten)
+    ? raw.filesWritten.map((f) =>
+        typeof f === "string" ? f : (f as { path: string }).path,
+      )
+    : [];
+  const cmds: CommandResult[] = (raw.commandsRan ?? []).map(
+    (c: CommandResult | CanonicalCommandResult) => ({
+      cmd: c.cmd,
+      ok: c.ok,
+      durationMs: c.durationMs,
+    }),
+  );
+  const scaffoldDir =
+    "scaffoldDir" in raw && typeof raw.scaffoldDir === "string"
+      ? raw.scaffoldDir
+      : "targetDir" in raw && typeof raw.targetDir === "string"
+        ? raw.targetDir
+        : undefined;
+  return { filesWritten: files, commandsRan: cmds, scaffoldDir };
 }
 
 export interface ClosingSummaryContext {
@@ -278,7 +310,10 @@ if (isEntry) {
     } else {
       manifestJson = await readStdin();
     }
-    const manifest = JSON.parse(manifestJson) as ScaffoldManifest;
+    const parsed = JSON.parse(manifestJson) as
+      | CanonicalScaffoldManifest
+      | ScaffoldManifest;
+    const manifest = coerceManifest(parsed);
     const out = renderClosingSummary(manifest, {
       useCase: cli.useCase,
       sharedDir: cli.sharedDir,
