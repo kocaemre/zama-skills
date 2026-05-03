@@ -4,7 +4,7 @@ import {
   replaceMarker,
   replaceAllMarkers,
   MarkerError,
-} from "./markers.ts";
+} from "./markers.js";
 
 describe("parseMarkers", () => {
   it("parses a single snippet marker with body", () => {
