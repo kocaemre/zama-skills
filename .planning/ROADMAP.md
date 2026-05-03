@@ -77,7 +77,13 @@
   3. Running `/zama-deploy` against a Sepolia env (a) requires user confirmation (model-invocation disabled), (b) fetches the live Sepolia ACL/KMS/Registry addresses via `WebFetch` (not pinned), (c) deploys + Etherscan verifies + auto-registers a token contract with the Confidential Token Registry — verifiable by tx hash on Sepolia Etherscan.
   4. Running `/zama-frontend` produces React code that imports `SepoliaConfig` from `@zama-fhe/relayer-sdk`, includes a `useDecrypted(handle)` hook with explicit "awaiting relayer" UX state, and uses `ethers@^6` (not v5) + typechain.
   5. Manually invoking all 4 skills in sequence on a single project does not clobber prior skills' output (boundary contract enforced).
-**Plans**: TBD
+**Plans**: 6 plans
+  - [ ] 04-PLAN-01-zama-contract-skill.md — /zama-contract skill body + acl-injector + cleartext-guard + 3 Solidity templates (CONTRACT-01..05)
+  - [ ] 04-PLAN-02-zama-test-skill.md — /zama-test skill body + mock & sepolia test templates with ACL re-decrypt assertions (TEST-01..04)
+  - [ ] 04-PLAN-03-zama-deploy-skill.md — /zama-deploy 7-step flow with disable-model-invocation, env-validate, live Sepolia address fetch, Etherscan verify, registry registration, ABI export (DEPLOY-01..05)
+  - [ ] 04-PLAN-04-zama-frontend-skill.md — /zama-frontend 3-file output (fhe.ts, useDecrypted, EncryptedInput) with ethers v6 enforcement + wagmi opt-in (FRONTEND-01..04)
+  - [ ] 04-PLAN-05-shared-helpers.md — _lib/preflight-shared.ts + closing-summary.ts + 4 closing-summary fragments
+  - [ ] 04-PLAN-06-validate-extension.md — extend scripts/validate.ts with auditPhase4Skills (frontmatter, files, sync markers, deprecation grep, hex-address ban)
 **UI hint**: yes
 
 ### Phase 5: Reference Example dApp
