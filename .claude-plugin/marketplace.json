@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace",
+  "name": "zama-skills",
+  "description": "AI agent skills for building confidential dApps with the Zama Protocol (fhEVM)",
+  "owner": {
+    "name": "Emre Koca",
+    "email": "emrekoca2003@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "zama-skills",
+      "source": "./plugins/zama-skills",
+      "description": "5 skills (init, contract, test, deploy, frontend) for fhEVM dApp scaffolding — context7-aware, anti-hallucination",
+      "homepage": "https://github.com/<owner>/zama-skills",
+      "repository": "https://github.com/<owner>/zama-skills",
+      "license": "MIT",
+      "keywords": ["zama", "fhevm", "fhe", "confidential", "ethereum", "solidity"],
+      "category": "blockchain"
+    }
+  ]
+}
