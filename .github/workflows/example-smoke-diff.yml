@@ -1,0 +1,39 @@
+name: example-smoke-diff
+
+# Proves examples/confidential-token/ has not silently drifted from the
+# canonical output of the skills shipped in this repo (EXAMPLE-05).
+# See .planning/phases/05-reference-example-dapp/SMOKE-DIFF.md for policy.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-diff:
+    name: Diff example vs skill output
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (lockfile-strict)
+        run: npm ci --no-audit --no-fund
+
+      - name: Run unit tests for the smoke-diff driver
+        run: npx vitest run scripts/example-smoke-diff.test.mjs
+
+      - name: Smoke-diff example vs skills
+        # Exit 1 = drift outside allowlist. Read SMOKE-DIFF.md for the policy
+        # on how to widen the allowlist (PR + reviewer sign-off) vs. how to
+        # re-scaffold the example from the current skills.
+        run: node scripts/example-smoke-diff.mjs
