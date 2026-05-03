@@ -1,0 +1,12 @@
+{
+  "name": "zama-skills",
+  "description": "AI agent skills for building confidential dApps with the Zama Protocol — context7-aware, anti-hallucination",
+  "author": {
+    "name": "Emre Koca",
+    "email": "emrekoca2003@gmail.com"
+  },
+  "homepage": "https://github.com/<owner>/zama-skills",
+  "repository": "https://github.com/<owner>/zama-skills",
+  "license": "MIT",
+  "keywords": ["zama", "fhevm", "fhe", "confidential", "ethereum", "solidity"]
+}
