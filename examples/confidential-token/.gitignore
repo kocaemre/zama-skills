@@ -12,3 +12,4 @@ dist/
 .next/
 out/
 deployments/localhost/
+fhevmTemp/

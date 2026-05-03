@@ -16,8 +16,11 @@
     "encrypted-types": "^0.0.4"
   },
   "devDependencies": {
-    "_comment_typescript": "typescript pinned to ^5.9.3 — top-level key in pinned-versions.json (no @pin: placeholder)",
     "typescript": "^5.9.3",
+    "ts-node": "^10.9.2",
+    "@types/node": "^20.19.30",
+    "@types/mocha": "^10.0.6",
+    "@types/chai": "^4.3.16",
     "@fhevm/hardhat-plugin": "^0.4.2",
     "@fhevm/mock-utils": "0.4.2",
     "@fhevm/host-contracts": "0.10.0",

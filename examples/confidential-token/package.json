@@ -10,7 +10,6 @@
     "dev:frontend": "pnpm --filter frontend dev"
   },
   "devDependencies": {
-    "_comment_typescript": "typescript pinned to ^5.9.3 — bump in template if pinned-versions.json changes (top-level key in pinned-versions.json, not under packages, so no @pin: placeholder used here)",
     "typescript": "^5.9.3"
   }
 }
