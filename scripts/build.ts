@@ -168,6 +168,11 @@ function syncExamplePackageJson(
   const deprecatedHits: string[] = [];
   const incompatibleHits: string[] = [];
 
+  // Track whether we actually changed any version pin. If not, return the
+  // original `raw` text unchanged so we don't churn formatting (indent,
+  // trailing newline) on files that were already correct.
+  let mutated = false;
+
   const rewriteSection = (section: Record<string, string> | undefined): void => {
     if (!section) return;
     for (const dep of Object.keys(section)) {
@@ -190,14 +195,20 @@ function syncExamplePackageJson(
       }
       // Rewrite if package is in pinned-versions.json
       if (versions.packages[dep]) {
-        section[dep] = getVersion(dep);
+        const next = getVersion(dep);
+        if (section[dep] !== next) {
+          section[dep] = next;
+          mutated = true;
+        }
       }
     }
   };
   rewriteSection(obj.dependencies);
   rewriteSection(obj.devDependencies);
 
-  const expected = JSON.stringify(obj, null, 2) + "\n";
+  // If nothing actually changed, preserve the on-disk byte sequence verbatim.
+  // Only emit canonical (2-space + trailing newline) JSON when we mutated.
+  const expected = mutated ? JSON.stringify(obj, null, 2) + "\n" : raw;
   return { expected, deprecatedHits, incompatibleHits };
 }
 
