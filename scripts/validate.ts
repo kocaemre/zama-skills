@@ -97,7 +97,9 @@ function parseFrontmatter(md: string): Record<string, unknown> {
   if (!m || !m[1]) throw new Error('SKILL.md missing YAML frontmatter (--- block)');
   const body: string = m[1];
   const out: Record<string, unknown> = {};
-  for (const line of body.split('\n')) {
+  const lines = body.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
     if (!line.trim() || line.trim().startsWith('#')) continue;
     const kv = line.match(/^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$/);
     if (!kv) continue;
@@ -105,6 +107,20 @@ function parseFrontmatter(md: string): Record<string, unknown> {
     const raw = kv[2];
     if (key === undefined || raw === undefined) continue;
     let v = raw.trim();
+    // Detect block-style YAML list (next non-empty line starts with `  - `).
+    // The minimal parser does not support lists; surface a precise error so
+    // authors don't get a confusing Zod "must be a non-empty whitelist" on a
+    // perfectly valid YAML list. Comma-separated string is required instead.
+    if (v === '') {
+      let j = i + 1;
+      while (j < lines.length && lines[j]!.trim() === '') j++;
+      const next = lines[j];
+      if (next && /^\s+-\s+/.test(next)) {
+        throw new Error(
+          `frontmatter key "${key}" uses YAML list syntax (\`  - item\`); this minimal parser only supports inline scalars. Use a comma-separated string: ${key}: "Read, Write, Edit"`,
+        );
+      }
+    }
     // Strip surrounding single/double quotes if present
     if (
       (v.startsWith('"') && v.endsWith('"')) ||
@@ -137,13 +153,22 @@ async function main() {
   const errors: string[] = [];
 
   // 1. marketplace.json
-  const mpRaw = await fs.readFile('.claude-plugin/marketplace.json', 'utf8');
-  const mpJson = JSON.parse(mpRaw);
+  const mpPath = '.claude-plugin/marketplace.json';
+  const mpRaw = await fs.readFile(mpPath, 'utf8');
+  let mpJson: unknown;
+  try {
+    mpJson = JSON.parse(mpRaw);
+  } catch (e) {
+    throw new Error(
+      `Invalid JSON in ${mpPath}: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
   const mp = MarketplaceSchema.parse(mpJson);
   if (RESERVED_MARKETPLACE_NAMES.has(mp.name)) {
     errors.push(`marketplace.name "${mp.name}" is on the reserved list`);
   }
-  const firstPluginRaw = mpJson.plugins?.[0] ?? {};
+  const firstPluginRaw =
+    (mpJson as { plugins?: Array<Record<string, unknown>> }).plugins?.[0] ?? {};
   const firstPlugin = mp.plugins[0];
   if (firstPlugin && firstPlugin.source !== `./${PLUGIN_DIR}`) {
     errors.push(
@@ -159,7 +184,14 @@ async function main() {
   // 2. plugin.json
   const plPath = `${PLUGIN_DIR}/.claude-plugin/plugin.json`;
   const plRaw = await fs.readFile(plPath, 'utf8');
-  const plJson = JSON.parse(plRaw);
+  let plJson: unknown;
+  try {
+    plJson = JSON.parse(plRaw);
+  } catch (e) {
+    throw new Error(
+      `Invalid JSON in ${plPath}: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
   const pl = PluginSchema.parse(plJson);
   if (pl.name !== 'zama-skills') {
     errors.push(`plugin.name must be "zama-skills", got "${pl.name}"`);
