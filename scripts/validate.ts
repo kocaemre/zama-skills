@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import fs from 'node:fs/promises';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { runSync } from './build.js';
+import { listAllPackages } from './lib/versions.js';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Marketplace + plugin schemas
@@ -143,9 +145,145 @@ const EXPECTED_SKILLS = ['init', 'contract', 'test', 'deploy', 'frontend'] as co
 const PLUGIN_DIR = 'plugins/zama-skills';
 const SKILLS_ROOT = `${PLUGIN_DIR}/skills`;
 
+// ────────────────────────────────────────────────────────────────────────────
+// Init asset audit (Phase 03-07)
+// ────────────────────────────────────────────────────────────────────────────
+
+const INIT_ASSETS_REL = `${PLUGIN_DIR}/skills/init/assets`;
+
+/**
+ * Whitelist of required init-skill assets. Every entry MUST exist on disk
+ * relative to the repo root, or the audit fails. The list mirrors the file
+ * inventory documented in 03-07-PLAN and produced by phases 03-02..05.
+ */
+const REQUIRED_INIT_ASSETS: readonly string[] = [
+  // Root templates
+  `${INIT_ASSETS_REL}/templates/pnpm-workspace.yaml.tpl`,
+  `${INIT_ASSETS_REL}/templates/root-package.json.tpl`,
+  `${INIT_ASSETS_REL}/templates/root-readme.md.tpl`,
+  `${INIT_ASSETS_REL}/templates/.env.example.tpl`,
+  `${INIT_ASSETS_REL}/templates/.gitignore.tpl`,
+  // Contracts package
+  `${INIT_ASSETS_REL}/templates/packages/contracts/package.json.tpl`,
+  `${INIT_ASSETS_REL}/templates/packages/contracts/hardhat.config.ts.tpl`,
+  `${INIT_ASSETS_REL}/templates/packages/contracts/tsconfig.json.tpl`,
+  // Frontend package
+  `${INIT_ASSETS_REL}/templates/packages/frontend/package.json.tpl`,
+  `${INIT_ASSETS_REL}/templates/packages/frontend/vite.config.ts.tpl`,
+  `${INIT_ASSETS_REL}/templates/packages/frontend/index.html.tpl`,
+  `${INIT_ASSETS_REL}/templates/packages/frontend/src/main.tsx.tpl`,
+  `${INIT_ASSETS_REL}/templates/packages/frontend/src/App.tsx.tpl`,
+  // Use-case seeds
+  `${INIT_ASSETS_REL}/seeds/confidential-token/Token.sol`,
+  `${INIT_ASSETS_REL}/seeds/voting/Poll.sol`,
+  `${INIT_ASSETS_REL}/seeds/auction/SealedBidAuction.sol`,
+  `${INIT_ASSETS_REL}/seeds/custom/Skeleton.sol`,
+];
+
+const PIN_REGEX = /<!--\s*@pin:([^\s>]+)\s*-->/g;
+
+/** Comment-line allowlist mirrors scaffold.ts isCommentLine — Skeleton.sol's
+ * deprecation-guard banner legitimately mentions deprecated names. */
+function isCommentLine(line: string): boolean {
+  const t = line.replace(/^\s+/, '');
+  return (
+    t.startsWith('//') ||
+    t.startsWith('*') ||
+    t.startsWith('/*') ||
+    t.startsWith('#')
+  );
+}
+
+function walkFiles(dir: string, out: string[] = []): string[] {
+  if (!existsSync(dir)) return out;
+  for (const entry of readdirSync(dir)) {
+    const p = path.join(dir, entry);
+    const st = statSync(p);
+    if (st.isDirectory()) walkFiles(p, out);
+    else out.push(p);
+  }
+  return out;
+}
+
+/**
+ * Audit init-skill assets:
+ *   1. Required-files whitelist exists on disk.
+ *   2. Every `<!-- @pin:<key> -->` references a known package (or the
+ *      `solc` compiler key, or the `@zama-fhe/relayer-sdk-dev` alias).
+ *   3. No non-comment line in templates/seeds contains `fhevmjs` or `"fhevm":`.
+ *
+ * Pure I/O over the given rootDir; returns aggregated errors so the caller
+ * can pretty-print and exit non-zero.
+ */
+export function auditInitAssets(rootDir: string): {
+  ok: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  const assetsDir = path.join(rootDir, INIT_ASSETS_REL);
+
+  // 1. Required-files check
+  for (const rel of REQUIRED_INIT_ASSETS) {
+    const abs = path.join(rootDir, rel);
+    if (!existsSync(abs)) {
+      errors.push(`Asset audit failed: required asset missing: ${rel}`);
+    }
+  }
+
+  // Build the set of known pin keys.
+  const knownKeys = new Set<string>([
+    ...listAllPackages(),
+    'solc', // compiler.solc top-level key
+  ]);
+
+  // 2 + 3. Walk all template + seed files.
+  const allFiles = walkFiles(assetsDir);
+  for (const abs of allFiles) {
+    const rel = path.relative(rootDir, abs);
+    let text: string;
+    try {
+      text = readFileSync(abs, 'utf8');
+    } catch {
+      continue;
+    }
+
+    // 2. Pin-key check (only meaningful for templates with placeholders).
+    if (rel.endsWith('.tpl')) {
+      const matches = text.matchAll(PIN_REGEX);
+      for (const m of matches) {
+        const key = m[1];
+        if (!key) continue;
+        if (!knownKeys.has(key)) {
+          errors.push(
+            `Asset audit failed: unknown @pin key '${key}' in ${rel} — add to pinned-versions.json or remove`,
+          );
+        }
+      }
+    }
+
+    // 3. Deprecation grep (skip comment lines).
+    const lines = text.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i += 1) {
+      const raw = lines[i] ?? '';
+      if (isCommentLine(raw)) continue;
+      let token: string | null = null;
+      if (/\bfhevmjs\b/.test(raw)) token = 'fhevmjs';
+      else if (/"fhevm"\s*:/.test(raw)) token = '"fhevm":';
+      if (token !== null) {
+        errors.push(
+          `Asset audit failed: deprecated identifier '${token}' in ${rel}:${i + 1}`,
+        );
+      }
+    }
+  }
+
+  return { ok: errors.length === 0, errors };
+}
+
 async function runSyncCheck(): Promise<{ changed: string[]; errors: string[] }> {
   return runSync({ check: true });
 }
+
 
 async function main() {
   const argv = process.argv.slice(2);
@@ -279,6 +417,15 @@ async function main() {
     }
     console.log('✓ No drift detected across sync targets');
   }
+
+  // Phase 03-07: init-skill asset audit (required files, @pin keys, deprecation grep).
+  const auditRes = auditInitAssets(process.cwd());
+  if (!auditRes.ok) {
+    console.error('\x1b[31m✗ Init asset audit failed:\x1b[0m');
+    for (const e of auditRes.errors) console.error('\x1b[31m  - ' + e + '\x1b[0m');
+    process.exit(1);
+  }
+  console.log('✓ Init asset audit passed (required files, @pin keys, deprecation grep)');
 }
 
 export { runSyncCheck };
