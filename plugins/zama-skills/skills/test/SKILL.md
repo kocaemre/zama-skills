@@ -255,3 +255,31 @@ Next: run /zama-deploy to deploy to Sepolia.
 - **Both files MUST contain an ACL re-decrypt assertion.** The pattern: after a state-write call, decrypt the handle back via the same signer. If `FHE.allowThis` or `FHE.allow(handle, signer)` was missing, decrypt throws — turning a silent ACL bug into a loud test failure.
 - **Output paths are hard-coded** to `packages/contracts/test/`. Do not write tests anywhere else.
 - **Contract name must be PascalCase.** Reject names with slashes, dots, or path traversal.
+
+
+## Closing Summary
+
+<!-- @sync:prompt:closing-summary-test -->
+<!-- closing-summary-test.md
+     Rendered after /zama-test finishes. Substituted via
+     `renderClosingSummary('test', vars)` from skills/_lib/closing-summary.ts
+     and transcluded into SKILL.md via `@sync:prompt:closing-summary-test`.
+     Placeholder syntax: {{key}}. -->
+
+## ✅ /zama-test complete — tests for `{{name}}`
+
+### What was generated
+
+- **Mock test (unit):** `{{mockPath}}`
+- **Sepolia test (integration):** `{{sepoliaPath}}`
+- **ACL re-decrypt assertions:** `{{aclAssertCount}}`
+- **HCU revert risk:** noted in Sepolia test header (relayer can revert if a tx exceeds the HCU budget; see comments)
+
+### Pattern coverage
+
+Both files use the canonical **encrypt-input → call → await decrypt → assert** flow. Mock tests use `@fhevm/hardhat-plugin` mock-utils for fast in-process decryption; Sepolia tests use the real relayer.
+
+> context7 verified the test API surface against `/zama-ai/fhevm-hardhat-template` — pinned versions match `@fhevm/hardhat-plugin@^0.4.2`.
+
+### Next: run `/zama-deploy` to ship `{{name}}` to Sepolia.
+<!-- @endsync -->

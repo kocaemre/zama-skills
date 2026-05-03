@@ -300,3 +300,32 @@ If pre-flight detects `@typechain/ethers-v5` or `ethers@^5`, **refuse to generat
 - The 4 status string literals (`idle`, `requesting`, `decrypted`, `error`) appear verbatim in `useDecrypted.ts` so callers can pattern-match them.
 - The `EncryptedInput` component bounds-checks the numeric value against the chosen `euint*` type before encrypting (T-04-24 mitigation: prevents silent overflow).
 - The chainId guard in `fhe.ts` warns (does not throw) on chainId mismatch, since `window.ethereum` may settle late (T-04-22 mitigation).
+
+
+## Closing Summary
+
+<!-- @sync:prompt:closing-summary-frontend -->
+<!-- closing-summary-frontend.md
+     Rendered after /zama-frontend finishes. Substituted via
+     `renderClosingSummary('frontend', vars)` from skills/_lib/closing-summary.ts
+     and transcluded into SKILL.md via `@sync:prompt:closing-summary-frontend`.
+     Placeholder syntax: {{key}}. -->
+
+## ✅ /zama-frontend complete — relayer-sdk wired
+
+### Files generated
+
+- **Encryption lib:** `{{libPath}}`
+- **Decryption hook:** `{{hookPath}}` (4-state: `idle → requesting → decrypted → error`)
+- **Encrypted input component:** `{{componentPath}}`
+
+### Stack pinned
+
+- `@zama-fhe/relayer-sdk@^0.4.2` (NOT deprecated `fhevmjs`)
+- `ethers@^6.16.0` + typechain v6 — enforced (skill aborts on typechain v5)
+- Wagmi shim: `{{withWagmi}}`
+
+> context7 verified the SDK API against `/zama-ai/fhevm` and the `fhevm-react-template` — `initSDK()` + `createInstance({ ...SepoliaConfig, network: window.ethereum })` is the current pattern.
+
+### You're ready to ship — `pnpm dev` to preview locally, then deploy to Vercel.
+<!-- @endsync -->
