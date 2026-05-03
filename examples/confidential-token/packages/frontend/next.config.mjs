@@ -13,9 +13,17 @@ const nextConfig = {
   // through typed barrels; until then we let `next build` skip the strict check.
   typescript: { ignoreBuildErrors: true },
   webpack: (config) => {
-    // RainbowKit + WalletConnect pull in optional `pino-pretty` / `lokijs` / `encoding`
-    // that are not needed in the browser. Mark them external to silence warnings.
-    config.externals.push("pino-pretty", "lokijs", "encoding");
+    // RainbowKit + WalletConnect pull in optional `pino-pretty` / `lokijs` /
+    // `encoding` that are not needed in the browser. MetaMask SDK references
+    // RN-only `@react-native-async-storage/async-storage`, guarded at runtime.
+    // Stub them as `false` so webpack treats them as empty modules.
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      "pino-pretty": false,
+      lokijs: false,
+      encoding: false,
+      "@react-native-async-storage/async-storage": false,
+    };
     return config;
   },
 };
