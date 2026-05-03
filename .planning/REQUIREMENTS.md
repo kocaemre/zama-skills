@@ -107,17 +107,72 @@
 
 ## Traceability
 
-Roadmap aşamasında doldurulacak.
+Roadmap created 2026-05-03. All 41 v1 requirements mapped to exactly one phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (Roadmap creation aşamasında doldurulacak) | | |
+| PLUGIN-01 | Phase 1 | Pending |
+| PLUGIN-02 | Phase 1 | Pending |
+| PLUGIN-03 | Phase 1 | Pending |
+| PLUGIN-04 | Phase 1 | Pending |
+| PLUGIN-05 | Phase 6 | Pending |
+| PLUGIN-06 | Phase 1 | Pending |
+| SHARED-01 | Phase 2 | Pending |
+| SHARED-02 | Phase 2 | Pending |
+| SHARED-03 | Phase 2 | Pending |
+| SHARED-04 | Phase 2 | Pending |
+| SHARED-05 | Phase 2 | Pending |
+| INIT-01 | Phase 3 | Pending |
+| INIT-02 | Phase 3 | Pending |
+| INIT-03 | Phase 3 | Pending |
+| INIT-04 | Phase 3 | Pending |
+| INIT-05 | Phase 3 | Pending |
+| INIT-06 | Phase 3 | Pending |
+| CONTRACT-01 | Phase 4 | Pending |
+| CONTRACT-02 | Phase 4 | Pending |
+| CONTRACT-03 | Phase 4 | Pending |
+| CONTRACT-04 | Phase 4 | Pending |
+| CONTRACT-05 | Phase 4 | Pending |
+| TEST-01 | Phase 4 | Pending |
+| TEST-02 | Phase 4 | Pending |
+| TEST-03 | Phase 4 | Pending |
+| TEST-04 | Phase 4 | Pending |
+| DEPLOY-01 | Phase 4 | Pending |
+| DEPLOY-02 | Phase 4 | Pending |
+| DEPLOY-03 | Phase 4 | Pending |
+| DEPLOY-04 | Phase 4 | Pending |
+| DEPLOY-05 | Phase 4 | Pending |
+| FRONTEND-01 | Phase 4 | Pending |
+| FRONTEND-02 | Phase 4 | Pending |
+| FRONTEND-03 | Phase 4 | Pending |
+| FRONTEND-04 | Phase 4 | Pending |
+| EXAMPLE-01 | Phase 5 | Pending |
+| EXAMPLE-02 | Phase 5 | Pending |
+| EXAMPLE-03 | Phase 5 | Pending |
+| EXAMPLE-04 | Phase 5 | Pending |
+| EXAMPLE-05 | Phase 5 | Pending |
+| DIST-01 | Phase 6 | Pending |
+| DIST-02 | Phase 6 | Pending |
+| DIST-03 | Phase 6 | Pending |
+| DIST-04 | Phase 6 | Pending |
+| DIST-05 | Phase 6 | Pending |
+| DIST-06 | Phase 6 | Pending |
+| DIST-07 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 41 total
-- Mapped to phases: TBD
-- Unmapped: TBD
+- Mapped to phases: 41 (100%)
+- Unmapped: 0
+
+**Per-phase requirement counts:**
+- Phase 1: 5 (PLUGIN-01,02,03,04,06)
+- Phase 2: 5 (SHARED-01..05)
+- Phase 3: 6 (INIT-01..06)
+- Phase 4: 18 (CONTRACT-01..05, TEST-01..04, DEPLOY-01..05, FRONTEND-01..04)
+- Phase 5: 5 (EXAMPLE-01..05)
+- Phase 6: 8 (PLUGIN-05, DIST-01..07)
+- Total: 41 ✓
 
 ---
 *Requirements defined: 2026-05-03*
-*Last updated: 2026-05-03 after initial definition*
+*Last updated: 2026-05-03 after roadmap creation (traceability filled)*
