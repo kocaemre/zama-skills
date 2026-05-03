@@ -29,6 +29,7 @@ contract Poll is Ownable {
 
     event PollCreated(bytes32 question, uint256 endsAt);
     event Voted(address indexed voter);
+    event ResultsPublished();
 
     constructor() Ownable(msg.sender) {}
 
@@ -69,10 +70,19 @@ contract Poll is Ownable {
     }
 
     /// @notice After poll closes, owner publishes tallies for decryption.
+    /// @dev WR-03: re-grant ACL to the contract immediately before
+    ///      `makePubliclyDecryptable`. fhEVM ACL semantics require the
+    ///      caller contract to currently hold access; defensive
+    ///      re-grant survives mock-test redeploys and ACL lifecycle
+    ///      edge cases. Emits `ResultsPublished` so off-chain indexers
+    ///      can detect when decryption becomes valid.
     function publishResults() external onlyOwner {
         require(block.timestamp >= endsAt, "Poll: still open");
+        FHE.allowThis(yesTally);
+        FHE.allowThis(noTally);
         // Make tallies publicly decryptable so anyone can verify the result.
         FHE.makePubliclyDecryptable(yesTally);
         FHE.makePubliclyDecryptable(noTally);
+        emit ResultsPublished();
     }
 }
