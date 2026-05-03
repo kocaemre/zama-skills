@@ -606,8 +606,19 @@ export async function scaffold(
     if (!r.ok) {
       manifest.commandsRan = commandsRan;
       stderr.write(pc.red("Aborting after pnpm install failure.\n"));
+      // WR-02: scaffold tree is now in a partial state. Document the
+      // recovery path so the user is not left with a half-installed tree
+      // that the next /zama-init refuses for being non-empty.
+      stderr.write(
+        pc.yellow(
+          `! Partial scaffold left at ${targetAbs}.\n` +
+            `! To retry: re-run with --force, or rm -rf "${targetAbs}" and re-run /zama-init.\n`,
+        ),
+      );
       stderr.write(serializeManifest(manifest) + "\n");
-      throw new Error("pnpm install failed");
+      throw new Error(
+        `pnpm install failed. Partial scaffold at ${targetAbs} — re-run with --force or remove the directory and retry.`,
+      );
     }
   }
 
@@ -624,8 +635,17 @@ export async function scaffold(
     if (!r.ok) {
       manifest.commandsRan = commandsRan;
       stderr.write(pc.red("Aborting after hardhat compile failure.\n"));
+      // WR-02: same recovery note as install failure path.
+      stderr.write(
+        pc.yellow(
+          `! Partial scaffold left at ${targetAbs}.\n` +
+            `! To retry: re-run with --force, or rm -rf "${targetAbs}" and re-run /zama-init.\n`,
+        ),
+      );
       stderr.write(serializeManifest(manifest) + "\n");
-      throw new Error("pnpm hardhat compile failed");
+      throw new Error(
+        `pnpm hardhat compile failed. Partial scaffold at ${targetAbs} — re-run with --force or remove the directory and retry.`,
+      );
     }
   }
 
