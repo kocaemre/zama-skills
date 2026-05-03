@@ -11,12 +11,10 @@ When a skill finishes its primary action, print a structured summary so the user
 {{INSTALLED_FILES}}
 
 ### Pinned versions used
-<!-- @sync:snippet:versions-table -->
-<!-- @endsync -->
+{{VERSIONS_TABLE}}  ← the skill substitutes the table from `shared/snippets/versions-table.md` at runtime
 
 ### Sepolia next steps
-<!-- @sync:snippet:sepolia-faucet -->
-<!-- @endsync -->
+{{SEPOLIA_FAUCET}}  ← the skill substitutes the URLs from `shared/snippets/sepolia-faucet.md` at runtime
 
 Add Sepolia to MetaMask: https://chainid.network/?search=sepolia
 
@@ -40,5 +38,5 @@ Add Sepolia to MetaMask: https://chainid.network/?search=sepolia
 ## Rules
 
 - **Always** include the "What was NOT done" section. Skills must be honest about scope — never imply work was completed when it was deferred.
-- **Always** transclude the versions table and Sepolia URLs from the canonical snippets via the `@sync:snippet:*` markers above. Do not inline them.
+- **Always** substitute `{{VERSIONS_TABLE}}` and `{{SEPOLIA_FAUCET}}` at skill runtime by reading the canonical snippets from `shared/snippets/versions-table.md` and `shared/snippets/sepolia-faucet.md`. Do not inline them in this template.
 - The skill runtime substitutes `{{...}}` placeholders before printing.

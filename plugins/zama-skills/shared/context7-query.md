@@ -1,6 +1,6 @@
 # Context7 Query Block (canonical)
 
-> **Single source of truth.** Every SKILL.md in this plugin transcludes this block via `<!-- @sync:shared:context7-query --> ... <!-- @endsync -->`. Edit here, run `pnpm sync`, and all skills update.
+> **Single source of truth.** Every SKILL.md in this plugin transcludes this block via a `@sync:shared:context7-query` marker pair. Edit here, run `pnpm sync`, and all skills update.
 
 ## Why this exists
 
