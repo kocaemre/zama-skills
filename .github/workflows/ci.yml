@@ -25,7 +25,9 @@ jobs:
       - name: Install dependencies (lockfile-strict)
         run: npm ci --no-audit --no-fund
 
-      - name: Validate manifests + SKILL.md frontmatter (zod)
+      - name: Validate manifests + SKILL.md frontmatter + sync drift
+        # `npm run validate` now also runs the sync drift check (Phase 2 SHARED-04).
+        # Failures here mean: run `pnpm sync` locally and commit the result.
         run: npm run validate
 
       - name: Type-check
