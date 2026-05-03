@@ -39,6 +39,13 @@ contract SealedBidAuction is Ownable {
         require(block.timestamp < endsAt, "Auction: ended");
 
         euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
+        // WR-04: grant the bidder ACL on their own amount handle so they
+        // can later re-decrypt and verify their submission. Without this,
+        // a confidential auction is hostile — the bidder cannot prove to
+        // themselves what they bid.
+        FHE.allowThis(amount);
+        FHE.allow(amount, msg.sender);
+
         ebool isHigher = FHE.gt(amount, highestBid);
 
         highestBid = FHE.select(isHigher, amount, highestBid);
@@ -54,6 +61,13 @@ contract SealedBidAuction is Ownable {
 
     /// @notice After the auction window, expose the winner. The owner can
     ///         decrypt both handles; the public can decrypt the bidder.
+    /// @dev WR-04: granting the *winner* private decryption of
+    ///      `highestBid` (clearing price) requires off-chain decrypt of
+    ///      `highestBidder` first, then a follow-up tx that calls
+    ///      `FHE.allow(highestBid, winnerAddr)`. We deliberately do not
+    ///      do that here because the on-chain contract does not know who
+    ///      the winner is in plaintext. Implement that as a one-shot
+    ///      `claimWinner(address winner)` callable post-settle if needed.
     function settle() external onlyOwner {
         require(block.timestamp >= endsAt, "Auction: still open");
         require(!settled, "Auction: already settled");
