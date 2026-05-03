@@ -44,21 +44,35 @@ const SHARED_DIR = resolve(process.cwd(), "plugins/zama-skills/shared");
 let _versions: Versions | null = null;
 let _deprecated: Deprecated | null = null;
 
-export function loadVersions(
-  path = resolve(SHARED_DIR, "pinned-versions.json"),
-): Versions {
-  const raw = JSON.parse(readFileSync(path, "utf8"));
+export function loadVersions(path?: string): Versions {
+  const target = path ?? resolve(SHARED_DIR, "pinned-versions.json");
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(target, "utf8"));
+  } catch (err) {
+    throw new Error(
+      `Invalid JSON in ${target}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
   const parsed = VersionsSchema.parse(raw);
-  _versions = parsed;
+  // Only cache when called with the default path. Caching a custom-path load
+  // would poison subsequent getVersion(...) calls in production code.
+  if (path === undefined) _versions = parsed;
   return parsed;
 }
 
-export function loadDeprecated(
-  path = resolve(SHARED_DIR, "deprecated-imports.json"),
-): Deprecated {
-  const raw = JSON.parse(readFileSync(path, "utf8"));
+export function loadDeprecated(path?: string): Deprecated {
+  const target = path ?? resolve(SHARED_DIR, "deprecated-imports.json");
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(target, "utf8"));
+  } catch (err) {
+    throw new Error(
+      `Invalid JSON in ${target}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
   const parsed = DeprecatedSchema.parse(raw);
-  _deprecated = parsed;
+  if (path === undefined) _deprecated = parsed;
   return parsed;
 }
 
