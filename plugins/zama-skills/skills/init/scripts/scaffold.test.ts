@@ -122,6 +122,24 @@ describe("scaffold (no-install / no-compile)", () => {
     ).rejects.toThrow(/not empty/);
   });
 
+  it("WR-01: rejects a target path that exists as a regular file (even with --force)", async () => {
+    // mktemp returned an existing dir; rm it and create a regular file at
+    // that path so the target is a file, not a dir.
+    rmSync(target, { recursive: true, force: true });
+    writeFileSync(target, "i am a file, not a dir");
+
+    await expect(
+      scaffold({
+        useCase: "confidential-token",
+        targetDir: target,
+        force: true, // force should NOT bypass the not-a-dir guard
+        install: false,
+        compile: false,
+        pluginRoot: PLUGIN_ROOT,
+      }),
+    ).rejects.toThrow(/not a directory/);
+  });
+
   it("overwrites a non-empty directory when force=true", async () => {
     mkdirSync(target, { recursive: true });
     writeFileSync(join(target, "leftover.txt"), "occupied");

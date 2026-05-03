@@ -482,6 +482,16 @@ export async function scaffold(
   const pluginRoot = opts.pluginRoot ?? locatePluginRoot();
   const targetAbs = resolve(opts.targetDir);
 
+  // WR-01: if target exists and is a regular file (not a directory),
+  // reject unconditionally — even with --force. Proceeding would issue
+  // `fse.outputFile(<file>/<rel>)` which fails with ENOTDIR mid-install
+  // and leaves no usable state. Better to fail fast with a clear message.
+  if (existsSync(targetAbs) && !statSync(targetAbs).isDirectory()) {
+    throw new Error(
+      `Target path exists and is not a directory: ${targetAbs}. Refusing to scaffold over a regular file. Remove or rename it, then re-run /zama-init.`,
+    );
+  }
+
   if (!opts.force && (await dirIsNonEmpty(targetAbs))) {
     throw new Error(
       `Target directory is not empty: ${targetAbs}. Pass --force to overwrite (will merge files), or choose another path.`,
