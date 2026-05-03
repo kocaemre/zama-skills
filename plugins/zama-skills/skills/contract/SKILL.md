@@ -218,16 +218,124 @@ Ask the user which path applies BEFORE generating decrypt logic. **If unspecifie
 Confirm the exact signature for the chosen path via context7 `/zama-ai/fhevm` `topic: "decryption"` — the API surface evolved across `@fhevm/solidity@0.10.x → 0.11.x` and the older examples on the open web are stale.
 <!-- @endsync -->
 
-# /zama-skills:contract — Skeleton (Phase 1)
+# /zama-contract — Workflow
 
-<!-- TODO: Phase 4 — flesh out confidential contract authoring patterns -->
+Generate a fhEVM-ready confidential Solidity contract with **auto-injected ACL grants**, **refused cleartext-leak patterns**, and an **HCU budget reminder**. The skill walks the user through a 4-question prompt flow, materializes a Solidity template, post-processes it through `acl-injector` + `cleartext-guard`, and writes the file to `packages/contracts/contracts/<Name>.sol`.
 
-Confidential contract authoring assistant. Phase 4 implements:
+## Step 1 — Pre-flight
 
-- Correct `euint8/16/32/64`, `ebool`, `eaddress` typing; cleartext-leak rejection
-- Mandatory `FHE.allowThis(handle)` after every state write
-- OZ Confidential Contracts (ERC-7984) extend patterns
-- Decryption path decision tree (public / user / oracle)
-- HCU budget guidance (20M/tx, 5M depth)
+Before doing anything, run:
 
-All patterns sourced live from context7 (`/zama-ai/fhevm`, `/websites/openzeppelin_confidential-contracts`).
+```bash
+node ${CLAUDE_SKILL_DIR}/scripts/lib/preflight.ts
+```
+
+This validates the active workspace contains `packages/contracts/` and lists `@fhevm/solidity` in `package.json`. If the check fails, print:
+
+> Run `/zama-init` first to scaffold the project.
+
+…and STOP. Do not proceed to Step 2.
+
+## Step 2 — Sequential AskUserQuestion (4 questions)
+
+Use **`AskUserQuestion`** (multi-question form) to collect the contract spec. Run the four questions one at a time so each answer can validate the next.
+
+**Q1 — Contract name** (free text, validate `^[A-Z][A-Za-z0-9]+$`)
+
+Re-prompt if invalid. Reject path-traversal segments (e.g., `..`, `/`, `\`).
+
+**Q2 — Base contract** (single-select)
+
+| Option | Description |
+|--------|-------------|
+| `ERC7984 (confidential token)` | Extends `@openzeppelin/confidential-contracts/token/ERC7984.sol`. Use for confidential ERC-20-style tokens. |
+| `VotesConfidential (governance)` | Extends `@openzeppelin/confidential-contracts/governance/VotesConfidential.sol`. Use for confidential voting / DAOs. |
+| `Standalone` | No base contract beyond `SepoliaConfig`. Use for custom logic (auctions, escrows, counters). |
+| `Ownable extension` | `Standalone` + `Ownable` from `@openzeppelin/contracts/access/Ownable.sol`. |
+
+**Q3 — State schema** (repeat-prompt loop)
+
+For each field, prompt three sub-questions until the user answers `done`:
+
+1. Field name (`^[a-z][A-Za-z0-9]*$`)
+2. Encrypted type — single-select: `euint8` / `euint16` / `euint32` / `euint64` / `ebool` / `eaddress`
+3. Mapping key type — single-select: `none (single slot)` / `address (mapping(address => T))` / `uint256 (mapping(uint256 => T))`
+
+Record the answers as the `schema: ContractInputs["schema"]` array.
+
+**Q4 — Decryption path** (single-select; each option carries an example signature)
+
+| Option | Description |
+|--------|-------------|
+| `public (anyone can decrypt)` | Emits `FHE.makePubliclyDecryptable(handle)`. Example: `function publish() external { FHE.makePubliclyDecryptable(result); }` |
+| `user (caller only via FHE.allow)` | Emits `FHE.allow(handle, msg.sender)`. Example: `function getMine() external returns (euint64) { FHE.allow(balance[msg.sender], msg.sender); return balance[msg.sender]; }` |
+| `oracle (off-chain relayer with allowlist)` | Emits `FHE.requestDecryption(...)` + callback. Example: `function settle() external { FHE.requestDecryption(handle, this.onDecrypted.selector); }` |
+
+## Step 3 — Cleartext-leak invariants (DO NOT REMOVE BLOCK)
+
+Generated contracts MUST NOT contain any of the following patterns. The runtime guard at `${CLAUDE_SKILL_DIR}/scripts/lib/cleartext-guard.ts` enforces this — if the post-processed Solidity matches any pattern below, generation aborts with the canonical replacement message.
+
+| # | Forbidden pattern | Canonical replacement |
+|---|-------------------|------------------------|
+| 1 | `require(FHE.decrypt(x))` | `FHE.allow(x, recipient)` + off-chain decrypt via relayer |
+| 2 | `require(decrypt(x))` | (same — `decrypt(...)` is not a valid runtime call on encrypted handles) |
+| 3 | `if (FHE.decrypt(x))` | `ebool cond = FHE.lt(...); FHE.allow(cond, recipient);` |
+| 4 | `if (decrypt(x))` | (same) |
+| 5 | `euint64 a; … if (a == b)` | `FHE.eq(a, b)` |
+| 6 | `euint64 a; … a != b` | `FHE.ne(a, b)` |
+| 7 | `euint64 a; … a < b` | `FHE.lt(a, b)` |
+| 8 | `euint64 a; … a > b` | `FHE.gt(a, b)` |
+| 9 | `euint64 a; … a <= b` | `FHE.le(a, b)` |
+| 10 | `euint64 a; … a >= b` | `FHE.ge(a, b)` |
+| 11 | `ebool b; … if (b)` (boolean cleartext branching) | `euint64 v = FHE.select(b, x, y);` |
+| 12 | `decrypt(<euint storage slot>)` | `FHE.allow(slot, msg.sender)` and decrypt off-chain |
+
+**Refusal contract:** if the user explicitly asks for a forbidden pattern, refuse and provide the canonical replacement above. Do not offer "just for debugging" fallbacks — they ship to Sepolia by default.
+
+## Step 4 — ACL invariants
+
+Every state-write of an encrypted handle MUST be followed by `FHE.allowThis(handle);`. Every handle returned to a caller MUST also have `FHE.allow(handle, msg.sender);` immediately before the `return` statement. The post-processor at `${CLAUDE_SKILL_DIR}/scripts/lib/acl-injector.ts` injects both grants idempotently after template materialization.
+
+If a generated contract is later edited by hand:
+
+- DO NOT remove `FHE.allowThis(...)` lines emitted by the generator.
+- DO NOT add new `state = FHE.add(...)` writes without an immediate `FHE.allowThis(state);` afterward — the contract will silently fail to read its own state on the next call.
+
+Reference: `@fhevm/solidity@^0.11.1` ACL primitives (`FHE.allowThis`, `FHE.allow`, `FHE.makePubliclyDecryptable`).
+
+## Step 5 — HCU budget reminder
+
+Every emitted contract begins with this header comment:
+
+```solidity
+// HCU budget: 20M/tx, 5M depth.
+// Heavy loops + nested FHE.select can exceed; use `pnpm gas-report` to profile.
+```
+
+The generator additionally injects a one-line reminder above any `for` / `while` body or nested `FHE.select(...)` call when the template contains them.
+
+## Step 6 — Generate
+
+Once the four questions are answered, invoke:
+
+```bash
+node ${CLAUDE_SKILL_DIR}/scripts/generate.ts --inputs "$(cat <<'JSON'
+{ "name": "...", "base": "...", "schema": [...], "decryptionPath": "..." }
+JSON
+)"
+```
+
+Capture the printed output path. If the cleartext-guard aborts, surface the canonical replacement message verbatim — do not attempt to "fix" the template by deleting the guard.
+
+To overwrite an existing file, append `--force`. Without it, generation aborts with a `file exists` error.
+
+## Step 7 — Closing summary
+
+Print a 4-line summary on success:
+
+```
+Wrote: packages/contracts/contracts/<Name>.sol
+ACL grants injected: <N>
+This contract refuses 12 known cleartext-leak patterns.
+Next: run /zama-test to generate mock + Sepolia tests for this contract.
+```
