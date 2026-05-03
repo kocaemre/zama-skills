@@ -2,7 +2,7 @@
 name: test
 description: Generate fhEVM tests using @fhevm/hardhat-plugin — encrypted-input mocks, decrypt assertions, Sepolia integration scaffolds. Use when the user wants to write or run tests for confidential contracts.
 when_to_use: Trigger phrases include "test fhevm", "mock encrypted input", "decrypt assertion", "fhevm hardhat test", "sepolia integration test". Run when in a hardhat project with @fhevm dependencies.
-allowed-tools: Read Write Edit Glob Grep Bash(npm test*) Bash(npx hardhat *) Bash(npm run *) WebFetch
+allowed-tools: AskUserQuestion, Bash, Read, Write, Edit, Glob, Grep
 ---
 
 ## Documentation Authority

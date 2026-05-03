@@ -230,16 +230,65 @@ Add Sepolia to MetaMask: https://chainid.network/?search=sepolia
 - The skill runtime substitutes `{{...}}` placeholders before printing.
 <!-- @endsync -->
 
-# /zama-skills:init — Skeleton (Phase 1)
+# /zama-init — Workflow
 
-<!-- TODO: Phase 3 — flesh out scaffolding workflow -->
+This skill scaffolds a deprecation-free, compile-green confidential dApp into `./<use-case>-dapp/` under the user's current directory. The flow is deterministic: pre-flight checks → ask the use-case → materialize templates with pinned versions → install + compile → grep guardrail → closing summary. Every dependency pin is sourced from `plugins/zama-skills/shared/pinned-versions.json` (npm-registry-verified) and the context7 sources cited above — no LLM-invented APIs, no deprecated imports, no hardcoded Sepolia addresses. The skill stops at compile-green; it does NOT deploy.
 
-Scaffold the official `fhevm-react-template` and customize for the user's confidential dApp use-case. Phase 3 fleshes out:
+## Step 1 — Pre-flight checks
 
-- Use-case branching (token / voting / auction / custom)
-- Pinned-version injection from `shared/pinned-versions.json`
-- `.env.example` generation (Sepolia RPC, mnemonic, Etherscan, relayer URL, registry)
-- MetaMask Sepolia deep-link
-- Closing summary
+Run `${CLAUDE_SKILL_DIR}/scripts/preflight.ts` via Bash. The script verifies Node `>=20`, `pnpm` on `PATH`, write access to the current working directory, and a lightweight context7 reachability ping. If it exits non-zero, print the helper's stderr verbatim and **STOP** — do not proceed to Step 2. Pre-flight is a hard gate; never "best-effort" past it.
 
-Resources will be referenced via `${CLAUDE_SKILL_DIR}/` once Phase 3 populates them.
+## Step 2 — Ask the use-case
+
+Use the `AskUserQuestion` tool with a single-select question titled "Which confidential dApp do you want to scaffold?" and the four options below. Each option ships a one-line "what you'll get" summary so the user picks without docs lookup:
+
+- `confidential-token` — minimal `ERC7984ERC20Wrapper` with mint/transfer demo (uses `@openzeppelin/confidential-contracts`).
+- `voting` — `VotesConfidential` poll with confidential ballots and snapshot-based tallying.
+- `auction` — sealed-bid auction over `euint64` with `FHE.le`/`FHE.select` winner selection (no OZ primitive).
+- `custom` — empty skeleton with `@fhevm/solidity` imports, ACL reminders, and deprecation-guard comment block.
+
+Capture the answer as `<use-case>` — every downstream step substitutes it.
+
+## Step 3 — Scaffold
+
+Run `${CLAUDE_SKILL_DIR}/scripts/scaffold.ts --use-case <use-case> --target ./<use-case>-dapp` via Bash. The helper:
+
+- Materializes `${CLAUDE_SKILL_DIR}/assets/templates/**` into the target directory, resolving every `<!-- @pin:<pkg> -->` placeholder against `shared/pinned-versions.json` via `getVersion(pkg)`.
+- Copies `${CLAUDE_SKILL_DIR}/assets/seeds/<use-case>/*.sol` into `packages/contracts/contracts/`.
+- Emits `.env.example`, `README.md` (with the 30-second value prop on top), and `.gitignore`.
+- Writes a JSON manifest to stdout describing every file written (consumed by Step 6).
+
+If the target directory exists and is non-empty, the script refuses unless invoked with `--force` — surface the refusal to the user and ask before re-running. On any other non-zero exit, print stderr and **STOP**.
+
+## Step 4 — Install + compile
+
+`cd <use-case>-dapp && pnpm install` — stream progress to the user. On failure, suggest `pnpm install --frozen-lockfile=false` exactly once; if that also fails, **STOP** and report the install log. Then run `pnpm hardhat compile`. On compile failure, run `pnpm hardhat clean && pnpm hardhat compile` exactly once. If that still fails, query context7 (`mcp__context7__get-library-docs` with `context7CompatibleLibraryId: "/zama-ai/fhevm"` and a `topic` derived from the Solidity error) and present findings to the user — do NOT auto-iterate further. Compile-green is the success gate for this step.
+
+## Step 5 — Deprecation belt-and-suspenders grep
+
+Run `${CLAUDE_SKILL_DIR}/scripts/scaffold.ts --post-grep ./<use-case>-dapp`. The helper recursively scans the materialized output for `fhevmjs` and `"fhevm":` (root package). Any hit means a template or seed leaked a deprecated import — **ABORT** with the offending file + line number and instruct the user to file an issue. This guardrail must never fire if Phase 2/3 templates are correct; it exists so a future regression fails loud instead of silently shipping deprecated code.
+
+## Step 6 — Closing summary
+
+Invoke `${CLAUDE_SKILL_DIR}/scripts/closing-summary.ts --manifest <stdout-from-step-3> --use-case <use-case>` and render the markdown block exactly as the script returns it. The summary MUST contain:
+
+- File inventory grouped by directory (`packages/contracts/`, `packages/frontend/`, root).
+- Commands that already passed (`pnpm install`, `pnpm hardhat compile`).
+- MetaMask Sepolia deep-link: `https://chainid.network/?search=sepolia` (rendered as a clickable link).
+- Three faucet URLs sourced from the `@sync:snippet:sepolia-faucet` block above.
+- Next-3-actions: `/zama-contract` (extend the seed contract), `/zama-test` (generate FHE-aware tests), `/zama-deploy --sepolia` (deploy + verify) — each with a one-line rationale.
+- An explicit line: **"I did NOT deploy — run `/zama-deploy --sepolia` when your `.env` is filled in."**
+- The verification line: **"context7 was queried at scaffold time — every dependency pin is verified live, no hallucinated APIs."**
+
+## Boundary contract
+
+- This skill **scaffolds**. It does NOT deploy. Deployment lives in `/zama-deploy` (Phase 4) and is gated by `disable-model-invocation: true` so Claude cannot trigger it autonomously.
+- This skill writes only to `./<use-case>-dapp/` under the current working directory. It refuses to overwrite a non-empty target without an explicit user `--force` confirmation.
+- This skill never edits files outside the target directory and never modifies the user's global `pnpm` / `npm` / git config.
+
+## Hard rules
+
+- Never emit a deprecated package name. Cross-reference the **Deprecation Guard** snippet above; `fhevmjs` and root-pkg `fhevm` are absolute refusals.
+- Never hardcode Sepolia ACL/KMS/Coprocessor/Registry addresses. Cross-reference the **Sepolia Setup** snippet — addresses are runtime-fetched from the live registry URL.
+- Pinned versions come from `shared/pinned-versions.json` only. Treat context7 doc snippets as API guidance, never as version truth.
+- On any pre-flight failure (Step 1) or post-grep hit (Step 5): **STOP**. Do not attempt partial recovery or "best-effort" continuation — these gates are non-negotiable.
