@@ -24,7 +24,7 @@ import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
-import { scaffold, postGrep } from "./scaffold.js";
+import { scaffold, postGrep, assertWithinTarget } from "./scaffold.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // scripts/ → init/ → skills/ → zama-skills/ (plugin root containing shared/)
@@ -203,5 +203,44 @@ describe("postGrep deprecation scanner", () => {
     );
     const res = postGrep(dir);
     expect(res.ok).toBe(true);
+  });
+});
+
+describe("assertWithinTarget — path traversal containment (CR-01)", () => {
+  it("accepts a destination that is a strict descendant of target", () => {
+    const target = "/tmp/zama-target";
+    expect(() =>
+      assertWithinTarget(target, "/tmp/zama-target/packages/contracts/Token.sol", "test"),
+    ).not.toThrow();
+  });
+
+  it("accepts the target root itself", () => {
+    const target = "/tmp/zama-target";
+    expect(() => assertWithinTarget(target, "/tmp/zama-target", "test")).not.toThrow();
+  });
+
+  it("rejects a destRel containing '..' segments that escapes the target", () => {
+    const target = "/tmp/zama-target";
+    // resolve("/tmp/zama-target", "../escape.txt") → "/tmp/escape.txt"
+    const escapingDest = resolve(target, "..", "escape.txt");
+    expect(() => assertWithinTarget(target, escapingDest, "evil-template")).toThrow(
+      /Refusing to write outside target/,
+    );
+  });
+
+  it("rejects an absolute path outside target (e.g. ~/.ssh/authorized_keys shape)", () => {
+    const target = "/tmp/zama-target";
+    expect(() =>
+      assertWithinTarget(target, "/etc/passwd", "evil-template"),
+    ).toThrow(/Refusing to write outside target/);
+  });
+
+  it("rejects a sibling directory that shares a common prefix", () => {
+    // "/tmp/zama-target-evil" shares prefix "/tmp/zama-target" but is NOT
+    // a descendant — the `+ sep` check guards against this exact case.
+    const target = "/tmp/zama-target";
+    expect(() =>
+      assertWithinTarget(target, "/tmp/zama-target-evil/file.txt", "evil-template"),
+    ).toThrow(/Refusing to write outside target/);
   });
 });

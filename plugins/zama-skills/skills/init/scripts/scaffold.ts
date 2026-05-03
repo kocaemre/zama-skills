@@ -113,6 +113,27 @@ function locatePluginRoot(): string {
   );
 }
 
+// ---------- Path containment ----------
+
+/**
+ * Refuse to write to any path that resolves outside `targetAbs`. The check
+ * normalizes both sides via `resolve()` and requires the destination to be a
+ * strict descendant of the target root (or the root itself for edge cases).
+ *
+ * Mitigates CR-01: a future contributor adding a template named (e.g.)
+ * `..%2Fevil.tpl` or any rename that produces `..` segments would otherwise
+ * silently write outside the scaffold root, especially under `--force`.
+ */
+export function assertWithinTarget(targetAbs: string, dest: string, label: string): void {
+  const destAbs = resolve(dest);
+  const rootAbs = resolve(targetAbs);
+  if (destAbs !== rootAbs && !destAbs.startsWith(rootAbs + sep)) {
+    throw new Error(
+      `Refusing to write outside target (${label}): ${dest} resolves to ${destAbs}, which escapes ${rootAbs}.`,
+    );
+  }
+}
+
 // ---------- Template walk ----------
 
 interface TemplateFile {
@@ -493,6 +514,7 @@ export async function scaffold(
       .split("{{USE_CASE}}")
       .join(useCaseSlug);
     const dest = resolve(targetAbs, t.destRel);
+    assertWithinTarget(targetAbs, dest, `template:${t.destRel}`);
     await fse.outputFile(dest, substituted, "utf8");
     filesWritten.push({
       path: t.destRel,
@@ -514,6 +536,7 @@ export async function scaffold(
     "contracts",
     seed.contractFileName,
   );
+  assertWithinTarget(targetAbs, seedContractDest, `seed-contract:${seed.contractFileName}`);
   await fse.copy(seedContractSrc, seedContractDest, { overwrite: true });
   filesWritten.push({
     path: relative(targetAbs, seedContractDest),
@@ -522,6 +545,7 @@ export async function scaffold(
   if (seed.extraScript) {
     const extraSrc = resolve(seedsRoot, opts.useCase, seed.extraScript.srcRel);
     const extraDest = resolve(targetAbs, seed.extraScript.destRel);
+    assertWithinTarget(targetAbs, extraDest, `extra-script:${seed.extraScript.destRel}`);
     await fse.copy(extraSrc, extraDest, { overwrite: true });
     filesWritten.push({
       path: seed.extraScript.destRel,
