@@ -8,7 +8,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Plugin Foundation + CI** — installable skeleton, valid manifests, schema validation in CI (Day 1, ~1 day)
+- [x] **Phase 1: Plugin Foundation + CI** — installable skeleton, valid manifests, schema validation in CI ✅ COMPLETE (2026-05-03)
 - [ ] **Phase 2: Shared Infrastructure** — pinned versions, context7 prompt, deprecation banlist, transclusion build (Day 1-2, ~0.5 day)
 - [ ] **Phase 3: `/zama-init` End-to-End** [CRITICAL PATH] — load-bearing scaffolder; produces working confidential dApp skeleton (Day 2-4, ~2 days)
 - [ ] **Phase 4: Other 4 Skills** — `/zama-contract`, `/zama-test`, `/zama-deploy`, `/zama-frontend` (Day 4-5, ~1.5 days; parallelization=true allows internal interleaving)
