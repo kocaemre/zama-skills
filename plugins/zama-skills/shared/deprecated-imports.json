@@ -1,0 +1,29 @@
+{
+  "$schema": "./deprecated-imports.schema.json",
+  "deprecated": {
+    "fhevmjs": {
+      "deprecated": true,
+      "replaces": "@zama-fhe/relayer-sdk",
+      "deprecatedAt": "2025-07-10",
+      "notes": "Officially deprecated by Zama. Skills MUST refuse to emit imports for this package."
+    },
+    "fhevm": {
+      "deprecated": true,
+      "replaces": "@fhevm/solidity",
+      "deprecatedAt": "2025-07-10",
+      "notes": "Root fhevm package deprecated. Use @fhevm/solidity for Solidity-side FHE primitives."
+    }
+  },
+  "incompatible": {
+    "hardhat@^3": {
+      "incompatible": true,
+      "reason": "fhevm-plugin peer-deps hardhat@^2.0.0; v3 untested with breaking config changes",
+      "useInstead": "hardhat@^2.28.4"
+    },
+    "ethers@^5": {
+      "incompatible": true,
+      "reason": "fhevm-plugin pins ethers v6; v5 mismatches typechain output",
+      "useInstead": "ethers@^6.16.0"
+    }
+  }
+}
