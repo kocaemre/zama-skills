@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "_comment_react": "React 18 pinned per CONTEXT (React 19 untested with @zama-fhe/relayer-sdk)",
     "@zama-fhe/relayer-sdk": "<!-- @pin:@zama-fhe/relayer-sdk -->",
     "ethers": "<!-- @pin:ethers -->",
     "react": "^18.3.1",

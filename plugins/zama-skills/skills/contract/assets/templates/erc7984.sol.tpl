@@ -5,12 +5,14 @@ pragma solidity 0.8.27;
 // Heavy loops + nested FHE.select can exceed; use `pnpm gas-report` to profile.
 
 import {FHE, euint8, euint16, euint32, euint64, ebool, eaddress, externalEuint64, externalEbool} from "@fhevm/solidity/lib/FHE.sol";
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984.sol";
+import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";
 
 /// @title {{NAME}} — confidential ERC-7984 token
 /// @notice Extends OpenZeppelin's ERC7984 base. Decryption path: {{DECRYPTION_PATH}}.
-contract {{NAME}} is ERC7984, SepoliaConfig {
+/// @dev    `ZamaEthereumConfig` wires the FHE coprocessor at construction.
+///         Note: pre-0.11 the export was named `SepoliaConfig`.
+contract {{NAME}} is ERC7984, ZamaEthereumConfig {
     constructor(string memory name_, string memory symbol_, string memory uri_)
         ERC7984(name_, symbol_, uri_)
     {}
