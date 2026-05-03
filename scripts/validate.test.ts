@@ -27,7 +27,7 @@ import { spawnSync } from "node:child_process";
 import fse from "fs-extra";
 
 import { runSync } from "./build.js";
-import { auditInitAssets } from "./validate.js";
+import { auditInitAssets, auditPhase4Skills } from "./validate.js";
 
 const REPO_ROOT = resolve(__dirname, "..");
 
@@ -262,6 +262,205 @@ describe("auditInitAssets", () => {
           e.includes("deprecated identifier") && e.includes("Skeleton.sol"),
       ),
     ).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 04-06 — auditPhase4Skills coverage
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("auditPhase4Skills", () => {
+  const cleanups: string[] = [];
+
+  afterEach(() => {
+    while (cleanups.length > 0) {
+      const dir = cleanups.pop()!;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  function makePhase4Fixture(): string {
+    const tmp = mkdtempSync(join(tmpdir(), "zama-phase4-audit-"));
+    cleanups.push(tmp);
+    // Mirror the layout the auditor walks: 4 Phase 4 skills + shared dir
+    // (for deprecated-imports.json + pinned-versions.json).
+    for (const slug of ["contract", "test", "deploy", "frontend"]) {
+      fse.copySync(
+        join(REPO_ROOT, `plugins/zama-skills/skills/${slug}`),
+        join(tmp, `plugins/zama-skills/skills/${slug}`),
+      );
+    }
+    fse.copySync(
+      join(REPO_ROOT, "plugins/zama-skills/shared"),
+      join(tmp, "plugins/zama-skills/shared"),
+    );
+    return tmp;
+  }
+
+  it("happy path — real repo passes auditPhase4Skills with no errors", () => {
+    const res = auditPhase4Skills(REPO_ROOT);
+    if (!res.ok) {
+      // Surface details to make CI failures actionable.
+      console.error("auditPhase4Skills errors:", res.errors);
+    }
+    expect(res.errors).toEqual([]);
+    expect(res.ok).toBe(true);
+  });
+
+  it("missing required template — flags 'missing template'", () => {
+    const tmp = makePhase4Fixture();
+    rmSync(
+      join(
+        tmp,
+        "plugins/zama-skills/skills/contract/assets/templates/contract.sol.tpl",
+      ),
+    );
+    const res = auditPhase4Skills(tmp);
+    expect(res.ok).toBe(false);
+    expect(
+      res.errors.some(
+        (e) => e.includes("contract") && e.includes("contract.sol.tpl"),
+      ),
+    ).toBe(true);
+  });
+
+  it("missing required script — flags 'missing'", () => {
+    const tmp = makePhase4Fixture();
+    rmSync(
+      join(
+        tmp,
+        "plugins/zama-skills/skills/deploy/scripts/lib/sepolia-addresses.ts",
+      ),
+    );
+    const res = auditPhase4Skills(tmp);
+    expect(res.ok).toBe(false);
+    expect(
+      res.errors.some(
+        (e) => e.includes("deploy") && e.includes("sepolia-addresses.ts"),
+      ),
+    ).toBe(true);
+  });
+
+  it("deploy SKILL.md without disable-model-invocation — flags it", () => {
+    const tmp = makePhase4Fixture();
+    const skillPath = join(
+      tmp,
+      "plugins/zama-skills/skills/deploy/SKILL.md",
+    );
+    const original = readFileSync(skillPath, "utf8");
+    const mutated = original.replace(
+      /^disable-model-invocation:\s*true\s*$/m,
+      "disable-model-invocation: false",
+    );
+    writeFileSync(skillPath, mutated, "utf8");
+    const res = auditPhase4Skills(tmp);
+    expect(res.ok).toBe(false);
+    expect(
+      res.errors.some(
+        (e) =>
+          e.includes("deploy") && e.includes("disable-model-invocation"),
+      ),
+    ).toBe(true);
+  });
+
+  it("missing allowed-tools in a skill frontmatter — flags it", () => {
+    const tmp = makePhase4Fixture();
+    const skillPath = join(
+      tmp,
+      "plugins/zama-skills/skills/contract/SKILL.md",
+    );
+    const original = readFileSync(skillPath, "utf8");
+    const mutated = original.replace(/^allowed-tools:.*$/m, "");
+    writeFileSync(skillPath, mutated, "utf8");
+    const res = auditPhase4Skills(tmp);
+    expect(res.ok).toBe(false);
+    expect(
+      res.errors.some(
+        (e) => e.includes("contract") && e.includes("allowed-tools"),
+      ),
+    ).toBe(true);
+  });
+
+  it("deprecated 'fhevmjs' import injected into a frontend template — flagged", () => {
+    const tmp = makePhase4Fixture();
+    const tplPath = join(
+      tmp,
+      "plugins/zama-skills/skills/frontend/assets/templates/fhe.ts.tpl",
+    );
+    const original = readFileSync(tplPath, "utf8");
+    writeFileSync(tplPath, original + '\nimport "fhevmjs";\n', "utf8");
+    const res = auditPhase4Skills(tmp);
+    expect(res.ok).toBe(false);
+    expect(
+      res.errors.some(
+        (e) => e.includes("frontend") && e.includes("fhevmjs"),
+      ),
+    ).toBe(true);
+    expect(res.errors.some((e) => e.includes("fhe.ts.tpl"))).toBe(true);
+  });
+
+  it("hex address pinned in deploy SKILL.md — flagged (DEPLOY-03)", () => {
+    const tmp = makePhase4Fixture();
+    const skillPath = join(
+      tmp,
+      "plugins/zama-skills/skills/deploy/SKILL.md",
+    );
+    const original = readFileSync(skillPath, "utf8");
+    writeFileSync(
+      skillPath,
+      original +
+        "\n\n<!-- pinned: 0x1234567890abcdef1234567890abcdef12345678 -->\n",
+      "utf8",
+    );
+    const res = auditPhase4Skills(tmp);
+    expect(res.ok).toBe(false);
+    expect(
+      res.errors.some(
+        (e) => e.includes("deploy") && e.includes("hex address"),
+      ),
+    ).toBe(true);
+  });
+
+  it("hex address inside a deploy test fixture — NOT flagged (allowlist)", () => {
+    const tmp = makePhase4Fixture();
+    const fixtureDir = join(
+      tmp,
+      "plugins/zama-skills/skills/deploy/scripts/__fixtures__",
+    );
+    mkdirSync(fixtureDir, { recursive: true });
+    writeFileSync(
+      join(fixtureDir, "sample.json"),
+      '{ "address": "0x1234567890abcdef1234567890abcdef12345678" }\n',
+      "utf8",
+    );
+    const res = auditPhase4Skills(tmp);
+    expect(
+      res.errors.some(
+        (e) => e.includes("hex address") && e.includes("__fixtures__"),
+      ),
+    ).toBe(false);
+  });
+
+  it("missing @sync:prompt:closing-summary-deploy marker — flagged", () => {
+    const tmp = makePhase4Fixture();
+    const skillPath = join(
+      tmp,
+      "plugins/zama-skills/skills/deploy/SKILL.md",
+    );
+    const original = readFileSync(skillPath, "utf8");
+    const mutated = original.replace(
+      /<!--\s*@sync:prompt:closing-summary-deploy\s*-->/g,
+      "<!-- closing-summary marker stripped for test -->",
+    );
+    writeFileSync(skillPath, mutated, "utf8");
+    const res = auditPhase4Skills(tmp);
+    expect(res.ok).toBe(false);
+    expect(
+      res.errors.some(
+        (e) =>
+          e.includes("deploy") && e.includes("closing-summary-deploy"),
+      ),
+    ).toBe(true);
   });
 });
 
