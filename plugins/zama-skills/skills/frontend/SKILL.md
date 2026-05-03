@@ -2,7 +2,7 @@
 name: frontend
 description: Integrate @zama-fhe/relayer-sdk into a React frontend with Wagmi/Viem or ethers v6 — encrypted input components, useDecrypted hook with relayer UX states, typechain wiring. Use when the user wants to build or extend the dApp UI.
 when_to_use: Trigger phrases include "fhevm frontend", "relayer sdk", "useDecrypted", "encrypted input ui", "react fhe". Run when editing files under src/ or app/ in a fhevm project.
-allowed-tools: AskUserQuestion Read Write Edit Glob Grep Bash(npm *) Bash(npx *) Bash(pnpm *) Bash(node *) Bash(tsx *) WebFetch
+allowed-tools: AskUserQuestion, Bash, Read, Write, Edit, Glob, Grep, WebFetch
 ---
 
 ## Documentation Authority
@@ -192,15 +192,111 @@ Ask the user which path applies BEFORE generating decrypt logic. **If unspecifie
 Confirm the exact signature for the chosen path via context7 `/zama-ai/fhevm` `topic: "decryption"` — the API surface evolved across `@fhevm/solidity@0.10.x → 0.11.x` and the older examples on the open web are stale.
 <!-- @endsync -->
 
-# /zama-skills:frontend — Skeleton (Phase 1)
+# /zama-skills:frontend — Workflow
 
-<!-- TODO: Phase 4 — flesh out frontend integration patterns -->
+Wires `@zama-fhe/relayer-sdk` into a React frontend (typically `packages/frontend/` from `/zama-init`). Outputs **3 files**:
 
-Frontend integration assistant. Phase 4 implements:
+| Path | Purpose |
+|------|---------|
+| `packages/frontend/src/lib/fhe.ts` | `getFhevmInstance()` singleton on top of `initSDK()` + `createInstance({...SepoliaConfig, network: window.ethereum})` |
+| `packages/frontend/src/hooks/useDecrypted.ts` | React hook surfacing 4 explicit states: `idle | requesting | decrypted | error` |
+| `packages/frontend/src/components/EncryptedInput.tsx` | Controlled `<input>` that encrypts on blur via `instance.createEncryptedInput(...)` and emits `{ handle, inputProof }` |
 
-- `@zama-fhe/relayer-sdk` `SepoliaConfig` init
-- `useDecrypted(handle)` React hook with "awaiting relayer" state
-- Encrypted-input component pattern
-- ethers v6 + typechain wiring (rejects v5 with explicit error)
+> If you opt into Wagmi+viem, `fhe.ts` is replaced by the wagmi shim (`fhe-wagmi.ts.tpl`) which derives `network` from `useWalletClient()` instead of `window.ethereum`.
 
-Will REFUSE to emit imports of deprecated `fhevmjs` or root `fhevm` packages (sourced from `shared/deprecated-imports.json` once Phase 2 ships it).
+## When to run
+
+Run after `/zama-init` and `/zama-deploy` have produced ABIs at `packages/frontend/src/abis/<Contract>.json`. If the contract is fresh, run `/zama-deploy` first to populate that file with the deployed address.
+
+## Workflow
+
+### Step 1 — Pre-flight
+
+Run the pre-flight script. It detects:
+
+- Workspace path (`packages/frontend/` must exist with a `package.json`).
+- `ethers` version: refuse if `^5.x` is detected.
+- `typechain` flavor: refuse if `@typechain/ethers-v5` appears in `dependencies` or `devDependencies`.
+
+If pre-flight refuses, suggest the migration command **verbatim**:
+
+```
+pnpm remove @typechain/ethers-v5 && pnpm add -D @typechain/ethers-v6 ethers@^6
+```
+
+Do NOT proceed with generation until the user fixes versions and re-runs.
+
+### Step 2 — Ask: Wagmi+viem or vanilla ethers?
+
+Use **AskUserQuestion** to surface a single yes/no:
+
+> "Wire encryption against `wagmi` + `viem` (instead of vanilla `window.ethereum`)? Recommended if your app already uses wagmi for wallet state."
+
+If yes → pass `--with-wagmi` to the generator. The generator emits `fhe.ts` from the wagmi shim template (still imported as `@/lib/fhe`).
+
+### Step 3 — Ask: Which contract to wire?
+
+Use **AskUserQuestion** to pick which contract this frontend session is wiring. Auto-suggest options by globbing `packages/frontend/src/abis/*.json` (each filename without `.json` is a candidate). If exactly one ABI is present, pre-select it; if zero, prompt the user to run `/zama-deploy` first.
+
+### Step 4 — Generate
+
+Call the generator from the skill bundle:
+
+```bash
+tsx ${CLAUDE_SKILL_DIR}/scripts/generate.ts \
+  --contract <Name> \
+  [--with-wagmi] \
+  [--force]
+```
+
+The generator:
+
+1. Re-runs preflight (defense in depth).
+2. Materializes the 3 templates with `<Contract>` substituted into the `@/abis/<Contract>.json` import path.
+3. Post-greps **every emitted file** for the literal token `fhevmjs` and aborts with non-zero exit if any match (deprecated package guardrail — see `shared/deprecated-imports.json`).
+4. Refuses to overwrite existing files unless `--force` is passed.
+5. Prints written paths to stdout.
+
+### Step 5 — Closing summary
+
+Print the 3 file paths, explain the **awaiting relayer** UX state (decrypts on Sepolia routinely take 5–10 s; the `requesting` state lets the UI show a spinner instead of looking frozen), and emit a sample usage block:
+
+```tsx
+import { useDecrypted } from "@/hooks/useDecrypted";
+import { EncryptedInput } from "@/components/EncryptedInput";
+
+function CounterPanel({ contractAddress, handle }: { contractAddress: `0x${string}`; handle: string | null }) {
+  const decrypt = useDecrypted<bigint>(handle);
+
+  return (
+    <>
+      <EncryptedInput
+        contractAddress={contractAddress}
+        type="euint64"
+        onEncrypted={({ handle, inputProof }) => {
+          // pass { handle, inputProof } as the encrypted-input args to your contract call
+        }}
+      />
+
+      {decrypt.status === "idle" && <button onClick={decrypt.request}>Reveal my balance</button>}
+      {decrypt.status === "requesting" && <p>Awaiting relayer… (5–10s on Sepolia)</p>}
+      {decrypt.status === "decrypted" && <p>Balance: {String(decrypt.value)}</p>}
+      {decrypt.status === "error" && <p>Decrypt failed: {decrypt.error?.message}</p>}
+    </>
+  );
+}
+```
+
+Closing line: **"Next: ship via `/zama-deploy` for a fresh contract, or `pnpm --filter frontend build` for a production bundle."**
+
+## Refusal callout — typechain v5 / ethers v5
+
+If pre-flight detects `@typechain/ethers-v5` or `ethers@^5`, **refuse to generate**. Print the migration command above and stop. Do not offer a partial generation. The output of typechain v5 is incompatible with the v6 ethers API the relayer-sdk expects, and silent mixed-version installs are a known footgun (see `shared/deprecated-imports.json` `incompatible` block).
+
+## Hard rules
+
+- Imports are restricted to `@zama-fhe/relayer-sdk` (and its `/bundle` entry). Never emit `fhevmjs`.
+- All three files are TS-strict-clean and typecheck under the `/zama-init`-generated `tsconfig.json`.
+- The 4 status string literals (`idle`, `requesting`, `decrypted`, `error`) appear verbatim in `useDecrypted.ts` so callers can pattern-match them.
+- The `EncryptedInput` component bounds-checks the numeric value against the chosen `euint*` type before encrypting (T-04-24 mitigation: prevents silent overflow).
+- The chainId guard in `fhe.ts` warns (does not throw) on chainId mismatch, since `window.ethereum` may settle late (T-04-22 mitigation).
