@@ -30,6 +30,14 @@ npx zama-skills install
 
 > **Note:** Phase 1 (foundation) ships the plugin manifests and 5 skill skeletons. Skill bodies fill out across Phases 2–4. For the latest status see [`.planning/ROADMAP.md`](.planning/ROADMAP.md).
 
+## Try it live
+
+[![Vercel](https://img.shields.io/badge/Vercel-Live-black?logo=vercel)](<VERCEL_URL>) [![Sepolia Verified](https://img.shields.io/badge/Sepolia-Verified-brightgreen?logo=ethereum)](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code) <!-- @sync:vercel-url -->
+
+See [`examples/confidential-token/`](examples/confidential-token/) — a confidential ERC-7984 token (cDEMO) deployed to Sepolia at [`0x04Bd105DE7a5D3297c3747cef90ac8b760136896`](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code) and live on Vercel. Built end-to-end by running this plugin's skills against an empty directory — every contract, test, deploy script, and React component is reproducible from the recorded skill commit SHAs in [`.gsd-snapshot.json`](examples/confidential-token/.gsd-snapshot.json).
+
+![demo](examples/confidential-token/docs/demo.gif) <!-- placeholder until Phase 6 records the real GIF -->
+
 ## What you get — 5 skills
 
 | Slash command | When it runs | What it does |
