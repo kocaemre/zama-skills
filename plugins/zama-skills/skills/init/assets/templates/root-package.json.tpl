@@ -1,0 +1,16 @@
+{
+  "name": "{{USE_CASE}}-dapp",
+  "private": true,
+  "version": "0.1.0",
+  "engines": { "node": ">=20" },
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "compile": "pnpm --filter contracts hardhat compile",
+    "test": "pnpm --filter contracts hardhat test",
+    "dev:frontend": "pnpm --filter frontend dev"
+  },
+  "devDependencies": {
+    "_comment_typescript": "typescript pinned to ^5.9.3 — bump in template if pinned-versions.json changes (top-level key in pinned-versions.json, not under packages, so no @pin: placeholder used here)",
+    "typescript": "^5.9.3"
+  }
+}

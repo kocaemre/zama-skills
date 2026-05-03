@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.local
+artifacts/
+cache/
+typechain-types/
+coverage/
+.DS_Store
+dist/
+.vite/
