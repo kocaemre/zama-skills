@@ -228,6 +228,11 @@ const SCAN_EXTS = new Set([
  * Skeleton.sol legitimately mentions deprecated package names inside its
  * deprecation-guard banner. We deliberately scan ONLY package.json (full file)
  * and import-statement-style hits in source files.
+ *
+ * NOTE: This MUST NOT run on `package.json`. JSON has no comments by spec
+ * (CR-02). A `#`-prefixed key like `"#fhevmjs": "0.6.2"` is legal JSON and
+ * would otherwise be silently skipped — bypassing the deprecation guard.
+ * Source-file types only: .ts/.tsx/.js/.jsx/.mjs/.cjs/.sol.
  */
 function isCommentLine(line: string): boolean {
   const trimmed = line.replace(/^\s+/, "");
@@ -270,18 +275,36 @@ function scanFile(
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i += 1) {
     const raw = lines[i] ?? "";
-    if (isCommentLine(raw)) continue;
     if (isPkgJson) {
-      // JSON dep entries — match the literal key forms that would appear in
-      // a dependency map.
-      if (/"fhevmjs"\s*:/.test(raw) || /"fhevm"\s*:/.test(raw)) {
+      // CR-02: do NOT run isCommentLine on package.json — JSON has no
+      // comments by spec, so a `#`-prefixed key (legal JSON) or any
+      // `// comment` line above a dep would otherwise bypass the guard.
+      // Match key form for dep maps:
+      if (
+        // Key form (canonical dep-map entry):
+        /"fhevmjs"\s*:/.test(raw) ||
+        /"fhevm"\s*:/.test(raw) ||
+        // CR-02: comment-style key smuggling — a `#`-prefixed key like
+        // `"#fhevmjs": "..."` is legal JSON. Match any quoted token whose
+        // basename ends in fhevmjs/fhevm followed by `:`.
+        /"[^"]*fhevmjs"\s*:/.test(raw) ||
+        /"[^"]*\bfhevm"\s*:/.test(raw) ||
+        // CR-02: array-form entries (bundleDependencies,
+        // bundledDependencies, peerDependenciesMeta keys, etc.). Match a
+        // quoted literal of fhevmjs/fhevm that is NOT immediately followed
+        // by `:` — i.e. used as an array element, not a map key.
+        /["']fhevmjs["'](?!\s*:)/.test(raw) ||
+        /["']fhevm["'](?!\s*:)/.test(raw)
+      ) {
         findings.push({
           hit: { file: relPath, line: i + 1, text: raw.trim() },
         });
       }
       continue;
     }
-    // Source files — only flag import-statement-style references.
+    // Source files — comment skip applies only here. Skeleton.sol's
+    // deprecation-guard banner uses // comments mentioning fhevmjs.
+    if (isCommentLine(raw)) continue;
     const importedFhevmjs =
       /\b(from|require\()\s*["']fhevmjs(\/|["'])/.test(raw) ||
       /\bimport\s+["']fhevmjs(\/|["'])/.test(raw);

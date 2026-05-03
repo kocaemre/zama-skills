@@ -194,6 +194,60 @@ describe("postGrep deprecation scanner", () => {
     expect(res.ok).toBe(true);
   });
 
+  it("CR-02: package.json bypass via `#`-prefixed comment-style key is NOT skipped", () => {
+    // A malicious or accidental package.json with a `#`-prefixed key shape
+    // (legal JSON) attempting to leak a deprecated dep MUST be flagged.
+    // Pre-fix: isCommentLine would skip the line because it starts with '#'.
+    writeFileSync(
+      join(dir, "package.json"),
+      [
+        "{",
+        '  "name": "evil",',
+        '  "#fhevmjs": "0.6.2",',
+        '  "dependencies": {}',
+        "}",
+      ].join("\n"),
+    );
+    const res = postGrep(dir);
+    expect(res.ok).toBe(false);
+    expect(res.matches.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("CR-02: package.json bypass via `// comment` line above a dep is NOT skipped", () => {
+    // Some tooling tolerates JSON-with-comments (JSON5). Pre-fix the
+    // isCommentLine guard would skip a `//` line containing the dep ref.
+    writeFileSync(
+      join(dir, "package.json"),
+      [
+        "{",
+        "  // fhevmjs is the OLD package — but we are sneaking it in below:",
+        '  "dependencies": { "fhevmjs": "0.6.2" }',
+        "}",
+      ].join("\n"),
+    );
+    const res = postGrep(dir);
+    expect(res.ok).toBe(false);
+    // Flag the dep line at minimum.
+    expect(res.matches.some((m) => /fhevmjs/.test(m.text))).toBe(true);
+  });
+
+  it("CR-02: catches `bundleDependencies` array form for fhevmjs/fhevm", () => {
+    writeFileSync(
+      join(dir, "package.json"),
+      JSON.stringify(
+        {
+          name: "evil",
+          bundleDependencies: ["fhevmjs", "lodash"],
+        },
+        null,
+        2,
+      ),
+    );
+    const res = postGrep(dir);
+    expect(res.ok).toBe(false);
+    expect(res.matches.some((m) => /fhevmjs/.test(m.text))).toBe(true);
+  });
+
   it("skips node_modules, .git, cache, artifacts subtrees", () => {
     const nm = join(dir, "node_modules");
     mkdirSync(nm, { recursive: true });
