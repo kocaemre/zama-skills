@@ -64,23 +64,31 @@ function readShared(dirs: Dirs, relPath: string): string {
   return readFileSync(full, "utf8");
 }
 
-function makeResolveMarker(dirs: Dirs): (kind: MarkerKind, name: string) => string {
+function makeResolveMarker(
+  dirs: Dirs,
+  errors: string[],
+): (kind: MarkerKind, name: string) => string {
   return function resolveMarker(kind: MarkerKind, name: string): string {
     let body: string;
     if (kind === "snippet") body = readShared(dirs, `snippets/${name}.md`);
     else if (kind === "prompt") body = readShared(dirs, `prompts/${name}.md`);
     else if (kind === "shared") body = readShared(dirs, `${name}.md`);
     else throw new Error(`Unknown marker kind: ${kind as string}`);
-    return resolvePinPlaceholders(body);
+    return resolvePinPlaceholders(body, errors);
   };
 }
 
-function resolvePinPlaceholders(text: string): string {
-  return text.replace(PIN_RE, (_match, pkg: string) => {
+function resolvePinPlaceholders(text: string, errors: string[]): string {
+  return text.replace(PIN_RE, (match, pkg: string) => {
     try {
       return getVersion(pkg);
     } catch {
-      return `<!-- @pin:${pkg} (unresolved) -->`;
+      errors.push(
+        `Unknown @pin package: ${pkg} — add it to plugins/zama-skills/shared/pinned-versions.json or fix the typo`,
+      );
+      // Leave the original marker untouched so the next sync re-detects it
+      // (idempotent only after the package is added/typo-fixed).
+      return match;
     }
   });
 }
@@ -136,11 +144,12 @@ function syncSkillMd(
   dirs: Dirs,
   skillName: string,
   resolveMarker: (kind: MarkerKind, name: string) => string,
+  errors: string[],
 ): { path: string; expected: string } {
   const path = join(dirs.SKILLS_DIR, skillName, "SKILL.md");
   const original = readFileSync(path, "utf8");
   const withMarkers = replaceAllMarkers(original, resolveMarker);
-  const expected = resolvePinPlaceholders(withMarkers);
+  const expected = resolvePinPlaceholders(withMarkers, errors);
   return { path, expected };
 }
 
@@ -195,19 +204,22 @@ function syncExamplePackageJson(
 function syncHardhatConfig(
   filePath: string,
   resolveMarker: (kind: MarkerKind, name: string) => string,
+  errors: string[],
 ): string {
   const original = readFileSync(filePath, "utf8");
   // Only resolves @sync markers; if none present, returns input unchanged.
   let out = replaceAllMarkers(original, resolveMarker);
-  out = resolvePinPlaceholders(out);
+  out = resolvePinPlaceholders(out, errors);
   return out;
 }
 
 export async function runSync(opts: SyncOpts): Promise<SyncResult> {
   const cwd = opts.cwd ?? process.cwd();
   const dirs = computeDirs(cwd);
-  const resolveMarker = makeResolveMarker(dirs);
   const result: SyncResult = { changed: [], errors: [] };
+  // Collect @pin resolution failures separately so we can de-dup before merging.
+  const pinErrors: string[] = [];
+  const resolveMarker = makeResolveMarker(dirs, pinErrors);
   // Eager-load shared registries so resolveMarker / version helpers don't bail half-way.
   loadVersions();
   loadDeprecated();
@@ -215,14 +227,14 @@ export async function runSync(opts: SyncOpts): Promise<SyncResult> {
   // 1. SKILL.md transclusion.
   const skillNames = listSkillDirs(dirs);
   for (const name of skillNames) {
-    const { path, expected } = syncSkillMd(dirs, name, resolveMarker);
+    const { path, expected } = syncSkillMd(dirs, name, resolveMarker, pinErrors);
     await applyFile(path, expected, opts, result);
   }
 
   // 2. Generic markdown regeneration (one per SKILL.md, in `generic/`).
   if (!opts.check) await fse.ensureDir(dirs.GENERIC_DIR);
   for (const name of skillNames) {
-    const { expected: expandedSkill } = syncSkillMd(dirs, name, resolveMarker);
+    const { expected: expandedSkill } = syncSkillMd(dirs, name, resolveMarker, pinErrors);
     const generic = generateGenericFromSkill(name, expandedSkill);
     const target = join(dirs.GENERIC_DIR, `${name}.md`);
     await applyFile(target, generic, opts, result);
@@ -245,12 +257,16 @@ export async function runSync(opts: SyncOpts): Promise<SyncResult> {
 
   // 4. examples/*/hardhat.config.ts — optional marker sync (skip silently if no markers).
   for (const cfgPath of listExampleHardhatConfigs(dirs)) {
-    const expected = syncHardhatConfig(cfgPath, resolveMarker);
+    const expected = syncHardhatConfig(cfgPath, resolveMarker, pinErrors);
     await applyFile(cfgPath, expected, opts, result);
   }
 
   if (fatal.length > 0) {
     result.errors.push(...fatal);
+  }
+  // De-dup @pin errors (same package can be referenced from many docs).
+  if (pinErrors.length > 0) {
+    result.errors.push(...Array.from(new Set(pinErrors)));
   }
 
   return result;

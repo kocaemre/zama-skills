@@ -128,7 +128,7 @@ The following versions are the authoritative pin set for this plugin. They were 
 | `@fhevm/solidity` | `^0.11.1` | Solidity FHE library. Replaces deprecated `fhevm` (root pkg). OZ confidential pins this exactly. |
 | `@fhevm/hardhat-plugin` | `^0.4.2` | Mock encrypt/decrypt + local FHE node for tests. |
 | `@fhevm/mock-utils` | `0.4.2` | Exact-version peer of hardhat-plugin. |
-| `@fhevm/host-contracts` | `<!-- @pin:@fhevm/host-contracts (unresolved) -->` | Pulled in transitively by hardhat-plugin. |
+| `@fhevm/host-contracts` | `0.10.0` | Pulled in transitively by hardhat-plugin. |
 | `@zama-fhe/relayer-sdk` | `^0.4.2` | Frontend SDK. Replaces deprecated `fhevmjs`. Use exact `0.4.1` in devDeps to match plugin peer; `^0.4.2` in frontend deps. |
 | `@openzeppelin/confidential-contracts` | `^0.4.0` | ERC-7984, VotesConfidential, FHESafeMath. |
 | `@openzeppelin/contracts` | `^5.6.1` | Required peer of confidential-contracts. |
@@ -136,7 +136,7 @@ The following versions are the authoritative pin set for this plugin. They were 
 | `encrypted-types` | `^0.0.4` | Shared TS types for encrypted handles. |
 | `ethers` | `^6.16.0` | v6 only — fhevm plugin pins v6 and v5 will mismatch typechain output. |
 | `hardhat` | `^2.28.4` | v2 line. fhevm plugin peer-deps `hardhat@^2.0.0`. Do NOT use Hardhat 3 yet. |
-| `solc` | `<!-- @pin:solc (unresolved) -->` | Compiler version pinned by template (supports `^0.8.24+`). |
+| `solc` | `0.8.27` | Compiler version pinned by template (supports `^0.8.24+`). |
 | Node.js | `>=20` | Matches fhevm-hardhat-template engines field. LTS, ESM-first. |
 
 ## Deprecated — do not use

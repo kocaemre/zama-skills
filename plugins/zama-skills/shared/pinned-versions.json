@@ -4,6 +4,8 @@
     "@fhevm/solidity": { "version": "^0.11.1", "notes": "Solidity FHE library; replaces deprecated `fhevm` root pkg" },
     "@fhevm/hardhat-plugin": { "version": "^0.4.2", "notes": "Hardhat integration; pulls @fhevm/host-contracts@0.10.0 + @fhevm/mock-utils@0.4.2 automatically" },
     "@fhevm/mock-utils": { "version": "0.4.2", "exact": true, "notes": "Exact-version peer of hardhat-plugin" },
+    "@fhevm/host-contracts": { "version": "0.10.0", "exact": true, "notes": "Pulled in transitively by @fhevm/hardhat-plugin@0.4.2" },
+    "solc": { "version": "0.8.27", "notes": "Solidity compiler version pinned by template; OZ confidential supports ^0.8.24+" },
     "@zama-fhe/relayer-sdk": { "version": "^0.4.2", "notes": "Frontend SDK; replaces deprecated fhevmjs. Use 0.4.1 in devDependencies to match plugin peer; ^0.4.2 in frontend dependencies." },
     "@zama-fhe/relayer-sdk-dev": { "version": "0.4.1", "exact": true, "aliasOf": "@zama-fhe/relayer-sdk", "notes": "Devdep variant matching @fhevm/hardhat-plugin@0.4.2 exact peer" },
     "@openzeppelin/confidential-contracts": { "version": "^0.4.0", "notes": "ERC-7984 confidential token + governance" },

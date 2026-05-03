@@ -106,6 +106,34 @@ describe("runSync drift detection", () => {
     }
   }, 30_000);
 
+  it("reports drift for unknown @pin: package (HR-02)", async () => {
+    // Inject a typo'd @pin: reference into a shared snippet that's transcluded
+    // into multiple SKILL.md files. Without HR-02, this would silently produce
+    // `<!-- @pin:nonexistent-pkg-typo (unresolved) -->` and `--check` would
+    // pass on a re-run (idempotent). With the fix, runSync surfaces a
+    // "Unknown @pin package" error.
+    const snippetPath = join(
+      fixture,
+      "plugins/zama-skills/shared/snippets/versions-table.md",
+    );
+    const original = readFileSync(snippetPath, "utf8");
+    writeFileSync(
+      snippetPath,
+      original + "\n<!-- @pin:nonexistent-pkg-typo -->\n",
+      "utf8",
+    );
+    try {
+      const res = await runSync({ check: true, cwd: fixture });
+      expect(
+        res.errors.some((e) =>
+          e.includes("Unknown @pin package: nonexistent-pkg-typo"),
+        ),
+      ).toBe(true);
+    } finally {
+      writeFileSync(snippetPath, original, "utf8");
+    }
+  });
+
   it("validate.ts subprocess exits 0 when fixture is clean", () => {
     const validateScript = join(REPO_ROOT, "scripts/validate.ts");
     const tsxBin = join(REPO_ROOT, "node_modules/.bin/tsx");
