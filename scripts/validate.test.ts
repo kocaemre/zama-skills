@@ -13,14 +13,21 @@
  * `pinned-versions.json`, `deprecated.json`, and `generic/` directories
  * into a temp dir, then mutating the init SKILL.md.
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
+import {
+  mkdtempSync,
+  rmSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+} from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import fse from "fs-extra";
 
 import { runSync } from "./build.js";
+import { auditInitAssets } from "./validate.js";
 
 const REPO_ROOT = resolve(__dirname, "..");
 
@@ -145,3 +152,120 @@ describe("runSync drift detection", () => {
     expect(proc.status).toBe(0);
   }, 30_000);
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 03-07 — auditInitAssets coverage
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("auditInitAssets", () => {
+  const cleanups: string[] = [];
+
+  afterEach(() => {
+    while (cleanups.length > 0) {
+      const dir = cleanups.pop()!;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  function makeAuditFixture(): string {
+    const tmp = mkdtempSync(join(tmpdir(), "zama-audit-"));
+    cleanups.push(tmp);
+    // Mirror the layout the auditor walks. Copy assets verbatim and shared
+    // (pinned-versions.json) so listAllPackages() succeeds inside the lib.
+    fse.copySync(
+      join(REPO_ROOT, "plugins/zama-skills/skills/init/assets"),
+      join(tmp, "plugins/zama-skills/skills/init/assets"),
+    );
+    fse.copySync(
+      join(REPO_ROOT, "plugins/zama-skills/shared"),
+      join(tmp, "plugins/zama-skills/shared"),
+    );
+    return tmp;
+  }
+
+  it("happy path — real repo passes with no errors", () => {
+    const res = auditInitAssets(REPO_ROOT);
+    expect(res.errors).toEqual([]);
+    expect(res.ok).toBe(true);
+  });
+
+  it("missing required file — flags 'required asset missing'", () => {
+    const tmp = makeAuditFixture();
+    rmSync(
+      join(
+        tmp,
+        "plugins/zama-skills/skills/init/assets/seeds/confidential-token/Token.sol",
+      ),
+    );
+    const res = auditInitAssets(tmp);
+    expect(res.ok).toBe(false);
+    expect(res.errors.some((e) => e.includes("required asset missing"))).toBe(
+      true,
+    );
+    expect(res.errors.some((e) => e.includes("Token.sol"))).toBe(true);
+  });
+
+  it("unknown @pin key — flags the offending key + file", () => {
+    const tmp = makeAuditFixture();
+    const tplPath = join(
+      tmp,
+      "plugins/zama-skills/skills/init/assets/templates/packages/contracts/package.json.tpl",
+    );
+    const orig = readFileSync(tplPath, "utf8");
+    writeFileSync(
+      tplPath,
+      orig + '\n"bogus-pkg": "<!-- @pin:not-a-real-pkg -->"\n',
+      "utf8",
+    );
+    const res = auditInitAssets(tmp);
+    expect(res.ok).toBe(false);
+    expect(
+      res.errors.some(
+        (e) =>
+          e.includes("unknown @pin key") && e.includes("'not-a-real-pkg'"),
+      ),
+    ).toBe(true);
+  });
+
+  it("deprecation hit on non-comment line — flags 'deprecated identifier'", () => {
+    const tmp = makeAuditFixture();
+    const seedPath = join(
+      tmp,
+      "plugins/zama-skills/skills/init/assets/seeds/custom/Skeleton.sol",
+    );
+    // Append a non-comment line containing the banned token.
+    const orig = readFileSync(seedPath, "utf8");
+    writeFileSync(seedPath, orig + '\nimport "fhevmjs";\n', "utf8");
+    const res = auditInitAssets(tmp);
+    expect(res.ok).toBe(false);
+    expect(
+      res.errors.some(
+        (e) =>
+          e.includes("deprecated identifier") && e.includes("Skeleton.sol"),
+      ),
+    ).toBe(true);
+  });
+
+  it("comment-line allowlist — '// fhevmjs note' does NOT trigger", () => {
+    const tmp = makeAuditFixture();
+    const seedPath = join(
+      tmp,
+      "plugins/zama-skills/skills/init/assets/seeds/custom/Skeleton.sol",
+    );
+    const orig = readFileSync(seedPath, "utf8");
+    writeFileSync(seedPath, orig + "\n// fhevmjs note — purely a doc line\n", "utf8");
+    const res = auditInitAssets(tmp);
+    // Comment line must NOT raise a deprecation hit on this file/line.
+    expect(
+      res.errors.filter(
+        (e) =>
+          e.includes("deprecated identifier") && e.includes("Skeleton.sol"),
+      ),
+    ).toEqual([]);
+  });
+});
+
+// Silence unused-import lint when `dirname`/`mkdirSync` aren't referenced; both
+// are kept available for future audit fixtures (writing brand-new tpl files).
+void dirname;
+void mkdirSync;
