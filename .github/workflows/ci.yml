@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate plugin + run tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (lockfile-strict)
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate manifests + SKILL.md frontmatter (zod)
+        run: npm run validate
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npm test
+
+      - name: Best-effort — official Claude plugin validate CLI
+        # Phase 1 best-effort: try the official CLI but never block the build.
+        # Phase 6 should re-evaluate once the CLI distribution package is confirmed.
+        # Tracked as RESEARCH.md A4 / Open Question 2.
+        continue-on-error: true
+        run: |
+          if npx --yes --package=@anthropic-ai/claude-code -- claude plugin validate . 2>/dev/null; then
+            echo "✓ Official CLI validation passed"
+          else
+            echo "::notice::Official 'claude plugin validate' CLI not available in this runner; relying on zod validator (mandatory step above is the gate)."
+          fi
