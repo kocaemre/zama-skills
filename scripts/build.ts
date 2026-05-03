@@ -26,12 +26,6 @@ import {
 } from "./lib/versions.js";
 import { generateGenericFromSkill } from "./lib/generic.js";
 
-const ROOT = process.cwd();
-const SHARED_DIR = resolve(ROOT, "plugins/zama-skills/shared");
-const SKILLS_DIR = resolve(ROOT, "plugins/zama-skills/skills");
-const GENERIC_DIR = resolve(ROOT, "generic");
-const EXAMPLES_DIR = resolve(ROOT, "examples");
-
 const PIN_RE = /<!--\s*@pin:([^\s>]+)\s*-->/g;
 
 const DRIFT_MSG = "Drift detected. Run `pnpm sync` and commit the result.";
@@ -43,25 +37,42 @@ export interface SyncResult {
 
 interface SyncOpts {
   check: boolean;
+  cwd?: string;
 }
 
-function readShared(relPath: string): string {
-  const full = resolve(SHARED_DIR, relPath);
+interface Dirs {
+  SHARED_DIR: string;
+  SKILLS_DIR: string;
+  GENERIC_DIR: string;
+  EXAMPLES_DIR: string;
+}
+
+function computeDirs(cwd: string): Dirs {
+  return {
+    SHARED_DIR: resolve(cwd, "plugins/zama-skills/shared"),
+    SKILLS_DIR: resolve(cwd, "plugins/zama-skills/skills"),
+    GENERIC_DIR: resolve(cwd, "generic"),
+    EXAMPLES_DIR: resolve(cwd, "examples"),
+  };
+}
+
+function readShared(dirs: Dirs, relPath: string): string {
+  const full = resolve(dirs.SHARED_DIR, relPath);
   if (!existsSync(full)) {
     throw new Error(`Shared content not found: ${relPath}`);
   }
   return readFileSync(full, "utf8");
 }
 
-function resolveMarker(kind: MarkerKind, name: string): string {
-  let body: string;
-  if (kind === "snippet") body = readShared(`snippets/${name}.md`);
-  else if (kind === "prompt") body = readShared(`prompts/${name}.md`);
-  else if (kind === "shared") body = readShared(`${name}.md`);
-  else throw new Error(`Unknown marker kind: ${kind as string}`);
-  // After loading, also resolve `<!-- @pin:<pkg> -->` placeholders so that
-  // versions-table.md (and any other snippet using them) gets concrete numbers.
-  return resolvePinPlaceholders(body);
+function makeResolveMarker(dirs: Dirs): (kind: MarkerKind, name: string) => string {
+  return function resolveMarker(kind: MarkerKind, name: string): string {
+    let body: string;
+    if (kind === "snippet") body = readShared(dirs, `snippets/${name}.md`);
+    else if (kind === "prompt") body = readShared(dirs, `prompts/${name}.md`);
+    else if (kind === "shared") body = readShared(dirs, `${name}.md`);
+    else throw new Error(`Unknown marker kind: ${kind as string}`);
+    return resolvePinPlaceholders(body);
+  };
 }
 
 function resolvePinPlaceholders(text: string): string {
@@ -74,31 +85,31 @@ function resolvePinPlaceholders(text: string): string {
   });
 }
 
-function listSkillDirs(): string[] {
-  if (!existsSync(SKILLS_DIR)) return [];
-  return readdirSync(SKILLS_DIR, { withFileTypes: true })
+function listSkillDirs(dirs: Dirs): string[] {
+  if (!existsSync(dirs.SKILLS_DIR)) return [];
+  return readdirSync(dirs.SKILLS_DIR, { withFileTypes: true })
     .filter((d) => d.isDirectory())
     .map((d) => d.name)
-    .filter((name) => existsSync(join(SKILLS_DIR, name, "SKILL.md")));
+    .filter((name) => existsSync(join(dirs.SKILLS_DIR, name, "SKILL.md")));
 }
 
-function listExamplePackageJsons(): string[] {
-  if (!existsSync(EXAMPLES_DIR)) return [];
+function listExamplePackageJsons(dirs: Dirs): string[] {
+  if (!existsSync(dirs.EXAMPLES_DIR)) return [];
   const out: string[] = [];
-  for (const entry of readdirSync(EXAMPLES_DIR, { withFileTypes: true })) {
+  for (const entry of readdirSync(dirs.EXAMPLES_DIR, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
-    const p = join(EXAMPLES_DIR, entry.name, "package.json");
+    const p = join(dirs.EXAMPLES_DIR, entry.name, "package.json");
     if (existsSync(p)) out.push(p);
   }
   return out;
 }
 
-function listExampleHardhatConfigs(): string[] {
-  if (!existsSync(EXAMPLES_DIR)) return [];
+function listExampleHardhatConfigs(dirs: Dirs): string[] {
+  if (!existsSync(dirs.EXAMPLES_DIR)) return [];
   const out: string[] = [];
-  for (const entry of readdirSync(EXAMPLES_DIR, { withFileTypes: true })) {
+  for (const entry of readdirSync(dirs.EXAMPLES_DIR, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
-    const p = join(EXAMPLES_DIR, entry.name, "hardhat.config.ts");
+    const p = join(dirs.EXAMPLES_DIR, entry.name, "hardhat.config.ts");
     if (existsSync(p)) out.push(p);
   }
   return out;
@@ -121,8 +132,12 @@ async function applyFile(
   }
 }
 
-function syncSkillMd(skillName: string): { path: string; expected: string } {
-  const path = join(SKILLS_DIR, skillName, "SKILL.md");
+function syncSkillMd(
+  dirs: Dirs,
+  skillName: string,
+  resolveMarker: (kind: MarkerKind, name: string) => string,
+): { path: string; expected: string } {
+  const path = join(dirs.SKILLS_DIR, skillName, "SKILL.md");
   const original = readFileSync(path, "utf8");
   const withMarkers = replaceAllMarkers(original, resolveMarker);
   const expected = resolvePinPlaceholders(withMarkers);
@@ -177,7 +192,10 @@ function syncExamplePackageJson(
   return { expected, deprecatedHits, incompatibleHits };
 }
 
-function syncHardhatConfig(filePath: string): string {
+function syncHardhatConfig(
+  filePath: string,
+  resolveMarker: (kind: MarkerKind, name: string) => string,
+): string {
   const original = readFileSync(filePath, "utf8");
   // Only resolves @sync markers; if none present, returns input unchanged.
   let out = replaceAllMarkers(original, resolveMarker);
@@ -186,30 +204,33 @@ function syncHardhatConfig(filePath: string): string {
 }
 
 export async function runSync(opts: SyncOpts): Promise<SyncResult> {
+  const cwd = opts.cwd ?? process.cwd();
+  const dirs = computeDirs(cwd);
+  const resolveMarker = makeResolveMarker(dirs);
   const result: SyncResult = { changed: [], errors: [] };
   // Eager-load shared registries so resolveMarker / version helpers don't bail half-way.
   loadVersions();
   loadDeprecated();
 
   // 1. SKILL.md transclusion.
-  const skillNames = listSkillDirs();
+  const skillNames = listSkillDirs(dirs);
   for (const name of skillNames) {
-    const { path, expected } = syncSkillMd(name);
+    const { path, expected } = syncSkillMd(dirs, name, resolveMarker);
     await applyFile(path, expected, opts, result);
   }
 
   // 2. Generic markdown regeneration (one per SKILL.md, in `generic/`).
-  if (!opts.check) await fse.ensureDir(GENERIC_DIR);
+  if (!opts.check) await fse.ensureDir(dirs.GENERIC_DIR);
   for (const name of skillNames) {
-    const { expected: expandedSkill } = syncSkillMd(name);
+    const { expected: expandedSkill } = syncSkillMd(dirs, name, resolveMarker);
     const generic = generateGenericFromSkill(name, expandedSkill);
-    const target = join(GENERIC_DIR, `${name}.md`);
+    const target = join(dirs.GENERIC_DIR, `${name}.md`);
     await applyFile(target, generic, opts, result);
   }
 
   // 3. examples/*/package.json — version sync + deprecation hard-errors.
   const fatal: string[] = [];
-  for (const pkgPath of listExamplePackageJsons()) {
+  for (const pkgPath of listExamplePackageJsons(dirs)) {
     const { expected, deprecatedHits, incompatibleHits } =
       syncExamplePackageJson(pkgPath);
     if (deprecatedHits.length > 0) {
@@ -223,8 +244,8 @@ export async function runSync(opts: SyncOpts): Promise<SyncResult> {
   }
 
   // 4. examples/*/hardhat.config.ts — optional marker sync (skip silently if no markers).
-  for (const cfgPath of listExampleHardhatConfigs()) {
-    const expected = syncHardhatConfig(cfgPath);
+  for (const cfgPath of listExampleHardhatConfigs(dirs)) {
+    const expected = syncHardhatConfig(cfgPath, resolveMarker);
     await applyFile(cfgPath, expected, opts, result);
   }
 

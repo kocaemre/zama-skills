@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { runSync } from './build.js';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Marketplace + plugin schemas
@@ -126,7 +127,13 @@ const EXPECTED_SKILLS = ['init', 'contract', 'test', 'deploy', 'frontend'] as co
 const PLUGIN_DIR = 'plugins/zama-skills';
 const SKILLS_ROOT = `${PLUGIN_DIR}/skills`;
 
+async function runSyncCheck(): Promise<{ changed: string[]; errors: string[] }> {
+  return runSync({ check: true });
+}
+
 async function main() {
+  const argv = process.argv.slice(2);
+  const skipSync = argv.includes('--skip-sync');
   const errors: string[] = [];
 
   // 1. marketplace.json
@@ -228,9 +235,30 @@ async function main() {
     process.exit(1);
   }
   console.log('✓ marketplace + plugin + 5 SKILL.md frontmatters valid');
+
+  // Phase 2 SHARED-04: sync drift check (unless explicitly skipped).
+  if (!skipSync) {
+    const syncRes = await runSyncCheck();
+    if (syncRes.errors.length > 0) {
+      console.error('\x1b[31m✗ Drift / fatal sync issues:\x1b[0m');
+      for (const e of syncRes.errors) console.error('\x1b[31m  - ' + e + '\x1b[0m');
+      console.error('\x1b[33mDrift detected. Run `pnpm sync` and commit the result.\x1b[0m');
+      process.exit(1);
+    }
+    console.log('✓ No drift detected across sync targets');
+  }
 }
 
-main().catch((e) => {
-  console.error('✗ Validator crashed:', e instanceof Error ? e.message : e);
-  process.exit(1);
-});
+export { runSyncCheck };
+
+const invokedDirect = (() => {
+  const arg1 = process.argv[1];
+  if (!arg1) return false;
+  return arg1.endsWith('scripts/validate.ts') || arg1.endsWith('validate.ts');
+})();
+if (invokedDirect) {
+  main().catch((e) => {
+    console.error('✗ Validator crashed:', e instanceof Error ? e.message : e);
+    process.exit(1);
+  });
+}

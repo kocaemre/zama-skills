@@ -41,6 +41,8 @@
   },
   "scripts": {
     "validate": "tsx scripts/validate.ts",
+    "sync": "tsx scripts/build.ts",
+    "sync:check": "tsx scripts/build.ts --check",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "cli": "tsx src/cli/index.ts"
