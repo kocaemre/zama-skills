@@ -1,0 +1,32 @@
+# docs/demo.gif — capture instructions
+
+This file is a placeholder. Replace with a real `demo.gif` (≤ 8 MB, ≤ 90 seconds, ≤ 1280×720) before the bounty submission. The README and root README both reference `docs/demo.gif` — once you record it, no other files need updating.
+
+## What to record (90 seconds, single take)
+
+| Time | Action | Why it matters |
+| --- | --- | --- |
+| 0:00 – 0:05 | Show the deployed Vercel URL in the address bar; landing page renders title + Connect Wallet | Proves it's a real, public dApp |
+| 0:05 – 0:15 | Click **Connect Wallet** → MetaMask → switch to Sepolia | Proves real wallet integration |
+| 0:15 – 0:30 | Click **Mint** → MetaMask popup → confirm tx → tx hash appears | Proves on-chain write path |
+| 0:30 – 0:50 | BalanceCard transitions: `idle → encrypting → relayer-pending → revealed` (the 4-state UX) | **The money shot** — this is the FHE relayer + ACL flow visualized |
+| 0:50 – 1:15 | Enter recipient address + amount → click **Confidential Transfer** → confirm tx | Proves encrypted-input flow (`EncryptedInput` component) |
+| 1:15 – 1:30 | Switch MetaMask to recipient account → reload → BalanceCard decrypts new balance | Proves end-to-end ACL grant + decryption |
+
+## Recording tools
+
+- **macOS:** [Kap](https://getkap.co) (free, exports GIF directly) or [QuickTime → GIF Brewery 3](https://gfycat.com/) (manual conversion)
+- **Cross-platform:** [LICEcap](https://www.cockos.com/licecap/) or [Peek](https://github.com/phw/peek) (Linux)
+- **Optimization:** Run the result through [gifsicle](https://www.lcdf.org/gifsicle/) — `gifsicle -O3 --lossy=80 input.gif -o demo.gif` typically halves file size with no visible quality loss
+
+## Checklist before committing
+
+- [ ] File is `docs/demo.gif` (not `.mp4`, `.mov`, or `.webm` — GitHub renders GIFs inline in READMEs)
+- [ ] File size is ≤ 8 MB (GitHub README image rendering ceiling for smooth load)
+- [ ] Duration is ≤ 90 seconds (judges have short attention spans)
+- [ ] No personal data visible (mask the deployer address bar substring `0xFa2961…` if uncomfortable)
+- [ ] Test by viewing the README on github.com after push — confirm the GIF auto-plays inline
+
+## Then delete this file
+
+Once `docs/demo.gif` exists, `git rm docs/demo.gif.TODO`.
