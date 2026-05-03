@@ -1,0 +1,13 @@
+{
+  "fetchedAt": "2026-05-03T20:53:38.571Z",
+  "ttlHours": 24,
+  "addresses": {
+    "WrappersRegistry": "0x2f0750Bbb0A246059d80e94c454586a7F27a128e",
+    "ZamaToken": "0xa798B04149e7a61cc95B7D114AD420e8969eA268",
+    "ZamaOFTAdapter": "0x55D5258841e9Fd304007683ff4637b0a80fb0e62",
+    "ProtocolDAO": "0x08e8a84c3c8c7cba165B1adcf67Ae4639eF84f52",
+    "PauserSet": "0xc62392B4100a1bD45AbDBf91E70f1E4349402b46",
+    "ProtocolFeesBurner": "0xFda98943FB461310A5d26769606D302Ea89890e3"
+  },
+  "source": "https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia.md"
+}

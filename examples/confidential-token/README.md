@@ -12,6 +12,12 @@ This project is a **confidential dApp** running on Sepolia testnet using Zama Pr
 
 You can be reading encrypted state from a deployed Sepolia contract in under 30 minutes from `pnpm install`.
 
+## Live deployment (Sepolia)
+
+> **Live address:** [`0x1ceD5d54B8565Db5493b64Bca389b8132841B658`](https://sepolia.etherscan.io/address/0x1ceD5d54B8565Db5493b64Bca389b8132841B658)
+> Deployed by [`0xFa2961718AE286Fb31A9AeA908F7bDF3bB8237e7`](https://sepolia.etherscan.io/address/0xFa2961718AE286Fb31A9AeA908F7bDF3bB8237e7) in [block 10784041](https://sepolia.etherscan.io/tx/0xe6f5c5dd0a919980e45f01c2156d56218ce8be7d0a1e74787bcf9b53f9a2fffb).
+> Full deploy summary in [`DEPLOYED.md`](./DEPLOYED.md).
+
 ## Quick start
 
 ```bash
