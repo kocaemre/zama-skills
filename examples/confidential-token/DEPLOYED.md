@@ -4,20 +4,20 @@
 
 | Field | Value |
 | --- | --- |
-| Address | [`0x1ceD5d54B8565Db5493b64Bca389b8132841B658`](https://sepolia.etherscan.io/address/0x1ceD5d54B8565Db5493b64Bca389b8132841B658#code) |
+| Address | [`0x04Bd105DE7a5D3297c3747cef90ac8b760136896`](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code) |
 | Name | Confidential Demo Token |
 | Symbol | cDEMO |
 | Network | Sepolia (chainId 11155111) |
 | Deployer | [`0xFa2961718AE286Fb31A9AeA908F7bDF3bB8237e7`](https://sepolia.etherscan.io/address/0xFa2961718AE286Fb31A9AeA908F7bDF3bB8237e7) |
-| Deploy tx | [`0xe6f5c5dd0a919980e45f01c2156d56218ce8be7d0a1e74787bcf9b53f9a2fffb`](https://sepolia.etherscan.io/tx/0xe6f5c5dd0a919980e45f01c2156d56218ce8be7d0a1e74787bcf9b53f9a2fffb) |
-| Block | 10784041 |
-| Timestamp | 2026-05-03T20:53:48.000Z |
+| Deploy tx | [`0x7d24fa87ebc0802e208eeee884b9fe67606e91b9fbf34209a01422ae196fb3a7`](https://sepolia.etherscan.io/tx/0x7d24fa87ebc0802e208eeee884b9fe67606e91b9fbf34209a01422ae196fb3a7) |
+| Block | 10784067 |
+| Timestamp | 2026-05-03T20:59:24.000Z |
 
 ## Verification
 
 Verified: skipped — ETHERSCAN_API_KEY missing — skipping verify; user must run `pnpm hardhat verify --network sepolia <addr> <args>` later
 
-Etherscan: <https://sepolia.etherscan.io/address/0x1ceD5d54B8565Db5493b64Bca389b8132841B658#code>
+Etherscan: <https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code>
 
 ## Registry
 
@@ -36,6 +36,6 @@ FORCE_REDEPLOY=1 pnpm hardhat run --network sepolia scripts/deploy.ts
 
 ```bash
 ETHERSCAN_API_KEY=<key> \
-  pnpm hardhat verify --network sepolia 0x1ceD5d54B8565Db5493b64Bca389b8132841B658 \
+  pnpm hardhat verify --network sepolia 0x04Bd105DE7a5D3297c3747cef90ac8b760136896 \
   "Confidential Demo Token" "cDEMO" "https://github.com/zama-ai/zama-skills"
 ```
