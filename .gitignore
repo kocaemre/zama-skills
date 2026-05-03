@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+package-lock.json.backup
+
+# build
+dist/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+
+# editor
+.DS_Store
+.vscode/
+.idea/
+
+# coverage / test
+coverage/
+.nyc_output/
+
+# logs
+*.log
+npm-debug.log*
