@@ -36,6 +36,71 @@ npx zama-skills install
 
 Voice-over walkthrough: `marketplace add` → `/zama-design` → `/zama-init` → `/zama-contract` → `/zama-deploy` (live Sepolia) → MetaMask decrypt on the live dApp. See [`docs/demo-video-script.md`](docs/demo-video-script.md) for the recording script and [`docs/demo-gif-capture.md`](docs/demo-gif-capture.md) for the silent GIF.
 
+## Quick Start — pick your path
+
+After installing the plugin, jump straight to the path that matches your goal. Each path is a chain of skills; Claude Code picks the next one automatically from the closing summary, but you can also type the slash commands yourself.
+
+### Path 1 — Idea to ship (full pipeline, ~30 min)
+
+You have an idea, you want a deployed dApp. Six skills, one chain:
+
+```
+/zama-design   →   "describe your idea"
+/zama-init     →   scaffold the monorepo
+/zama-contract →   write the confidential contract
+/zama-test     →   mock + Sepolia tests
+/zama-audit    →   FHE-aware code review (must pass)
+/zama-deploy   →   Sepolia deploy + Etherscan verify
+/zama-frontend →   wire the UI
+```
+
+Best for: hackathon submissions, MVPs, learning the stack end-to-end.
+
+### Path 2 — Just the contract (~5 min)
+
+You already have a project; you only need a confidential ERC-7984 / Votes / custom contract.
+
+```
+/zama-contract
+# pick: name, base (erc7984 / votes / custom), state schema, decryption path
+```
+
+Output drops at `packages/contracts/contracts/<Name>.sol` with auto-injected ACL grants and a refusal to emit any cleartext-leak pattern. Recommended follow-up: `/zama-test` for the test scaffolding, `/zama-audit` to confirm the diff is clean.
+
+### Path 3 — Audit / harden an existing contract (~2 min)
+
+You inherited a confidential contract or wrote one by hand. Run the FHE-aware review:
+
+```
+/zama-audit              # scans current directory
+/zama-audit ./contracts  # scoped to a path
+```
+
+Reports ACL gaps, cleartext leaks, HCU explosions (>12 FHE ops/fn), deprecated imports. Exits 0 (clean), 1 (warnings), 2 (critical) so you can wire it into CI.
+
+### Path 4 — Debug a runtime error (~1 min)
+
+You got an error from hardhat, vitest, the relayer, or the live dApp. Paste it:
+
+```
+/zama-debug
+# paste the stack trace / revert message when prompted
+```
+
+Matches against a 10+ pattern catalog (ACL revert, `initSDK undefined`, deprecated imports, HCU exceeded, SSR `indexedDB`, etherscan v1, relayer timeout, etc.) and prints the root cause + the exact fix command.
+
+### Path 5 — Design only (no code), then hand off
+
+You want a planning artifact you can share with collaborators or feed into the chain later.
+
+```
+/zama-design
+```
+
+Produces `DESIGN.md` (contract architecture + ACL strategy per actor + decryption path per data type) and `UI-WIREFRAME.md` (component tree + 4-state UX flows). Both files reference live Zama docs via context7 — no hallucinated APIs. Pick this path if you want to validate the architecture before committing to scaffolding.
+
+---
+
 ## What you get — 8 skills
 
 | Slash command | When it runs | What it does |
