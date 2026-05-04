@@ -1,5 +1,5 @@
 ---
-name: contract
+name: zama-contract
 description: Author confidential Solidity contracts using @fhevm/solidity (euint, ebool, eaddress, ACL, FHE.allowThis). Use when the user wants to write or modify FHE-aware smart contracts, integrate OpenZeppelin Confidential Contracts (ERC-7984, governance), or pick a decryption path (public/user/oracle).
 when_to_use: Trigger phrases include "write fhevm contract", "confidential token", "euint", "encrypted contract", "FHE.allow", "confidential ERC20". Run when editing .sol files in a fhevm project.
 allowed-tools: AskUserQuestion Read Write Edit Glob Grep Bash(npm *) Bash(npx hardhat *) Bash(node *) Bash(pnpm *) Bash(tsx *) WebFetch

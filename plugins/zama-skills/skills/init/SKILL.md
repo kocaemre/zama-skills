@@ -1,5 +1,5 @@
 ---
-name: init
+name: zama-init
 description: Scaffold a new confidential dApp from the official fhevm-react-template, customized for the user's chosen use-case (token, voting, auction, custom). Use when the user wants to bootstrap a new Zama Protocol / fhEVM project from scratch.
 when_to_use: Trigger phrases include "init zama project", "new fhevm dapp", "scaffold confidential token", "start zama", "bootstrap confidential dapp". Run when working in an empty or near-empty directory.
 context: fork

@@ -1,5 +1,5 @@
 ---
-name: frontend
+name: zama-frontend
 description: Integrate @zama-fhe/relayer-sdk into a React frontend with Wagmi/Viem or ethers v6 — encrypted input components, useDecrypted hook with relayer UX states, typechain wiring. Use when the user wants to build or extend the dApp UI.
 when_to_use: Trigger phrases include "fhevm frontend", "relayer sdk", "useDecrypted", "encrypted input ui", "react fhe". Run when editing files under src/ or app/ in a fhevm project.
 allowed-tools: AskUserQuestion, Bash, Read, Write, Edit, Glob, Grep, WebFetch

@@ -1,5 +1,5 @@
 ---
-name: autonomous
+name: zama-autonomous
 description: One-command end-to-end pipeline. Runs design → init → contract → test → audit → deploy → frontend in sequence, pausing only at safety gates (audit findings, the disable-model-invocation deploy step, frontend smoke test). Best for first-time users who want a working confidential dApp without thinking about which skill comes next.
 when_to_use: Trigger phrases include "do everything", "full pipeline", "build me a confidential dApp end to end", "auto", "I want the whole thing", "/zama-autonomous". Run when the user wants the complete chain in one go and is OK pausing at safety prompts. Do NOT run if the user is debugging a specific step (use `/zama-debug` instead) or only wants one part (use the specific skill directly).
 allowed-tools: AskUserQuestion Read Write Edit Glob Grep Bash(node *) Bash(pnpm *) Bash(npx *) Bash(tsx *) Bash(git *)

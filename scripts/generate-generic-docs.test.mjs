@@ -29,7 +29,7 @@ const INIT_SKILL = join(SKILLS_DIR, "init", "SKILL.md");
 describe("generateGenericDoc — single SKILL", () => {
   it("Test 1: emits the source skill name and description in the output", () => {
     const out = generateGenericDoc({ skillPath: INIT_SKILL });
-    expect(out).toContain("name: init");
+    expect(out).toContain("name: zama-init");
     // description text from init SKILL.md
     expect(out).toContain("Scaffold a new confidential dApp");
   });

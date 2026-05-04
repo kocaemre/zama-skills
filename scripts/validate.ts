@@ -621,8 +621,13 @@ async function main() {
       );
       continue;
     }
-    if (fm.name !== slug) {
-      errors.push(`${p}: name "${fm.name}" must match folder "${slug}"`);
+    // Skill name may be the folder slug OR the slug prefixed with `zama-`
+    // (e.g. folder `init` may declare `name: zama-init` to surface as
+    // `/zama-init` in Claude Code's slash-command picker instead of `/init`).
+    if (fm.name !== slug && fm.name !== `zama-${slug}`) {
+      errors.push(
+        `${p}: name "${fm.name}" must equal folder "${slug}" or "zama-${slug}"`,
+      );
     }
     // disable-model-invocation: positive AND negative check (only deploy)
     if (slug === 'deploy') {

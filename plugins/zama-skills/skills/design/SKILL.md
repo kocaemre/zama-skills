@@ -1,5 +1,5 @@
 ---
-name: design
+name: zama-design
 description: Turn a free-form confidential dApp idea into a production-ready blueprint. The user describes their use-case in natural language ("sealed-bid auction for art", "private DAO voting", "anonymous payroll") and this skill produces two grounded design docs — DESIGN.md (contract architecture, state schema, ACL strategy per actor, decryption path per data type, deployment notes) and UI-WIREFRAME.md (component tree, user flows, 4-state UX hooks). Every recommendation is grounded in live context7 queries against /zama-ai/fhevm and /websites/openzeppelin_confidential-contracts so no hallucinated APIs or deprecated packages leak into the design. Stops at design — does NOT scaffold or deploy.
 when_to_use: Trigger phrases include "design my fhevm app", "blueprint zama dapp", "anlat fikrini", "plan confidential dapp", "what contract for X", "how should I structure", "wireframe zama", "decide architecture", "OZ base or custom". Run BEFORE /zama-init when the user has a fuzzy idea and needs concrete guidance on which OZ confidential primitive to use, what gets encrypted, who can decrypt what, and what the UI flow looks like. Outputs land in .planning/v1-design/ so the next skill (/zama-init, /zama-contract) can consume them.
 allowed-tools: Bash(mkdir *) Bash(ls *) Bash(cat *) AskUserQuestion Read Write Edit

@@ -1,5 +1,5 @@
 ---
-name: doctor
+name: zama-doctor
 description: Diagnose the user's Claude Code environment for Zama-skills readiness — checks Node, pnpm, git, MCP servers (context7 required, magic recommended), Sepolia connectivity, and skill plugin install status. Read-only; never modifies anything.
 when_to_use: Trigger phrases include "zama doctor", "check zama setup", "what's missing", "why isn't /zama-init working", "diagnose zama", "/zama-doctor". Run when a user reports a setup-time error or before the first-time install. Also run as a quick first step when any other zama-skill complains about a missing dependency.
 allowed-tools: Bash(node *) Bash(pnpm *) Bash(npm *) Bash(git *) Bash(curl *) Bash(claude *) Bash(which *) Read Glob Grep

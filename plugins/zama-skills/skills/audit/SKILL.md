@@ -1,5 +1,5 @@
 ---
-name: audit
+name: zama-audit
 description: Run an FHE-aware code review on a Solidity + TypeScript codebase using @fhevm/solidity. Detects four high-impact issue classes — missing ACL grants (FHE.allowThis / FHE.allow), cleartext leaks via require/event/emit on decrypted values, HCU-explosion functions (>12 warning, >20 error FHE ops in one tx), and imports of officially deprecated packages (fhevm root, fhevmjs). Produces AUDIT-REPORT.md with severity classification.
 when_to_use: Trigger phrases include "audit fhevm contract", "review fhe code", "check ACL grants", "find cleartext leaks", "HCU budget", "deprecated fhevmjs". Run before deploying confidential contracts to Sepolia, after major refactors of euint logic, or when migrating off deprecated fhevm/fhevmjs.
 allowed-tools: Read Glob Grep Bash(tsx *) Bash(node *) Bash(npm *) Bash(pnpm *)

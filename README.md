@@ -172,18 +172,18 @@ Produces `DESIGN.md` (contract architecture + ACL strategy per actor + decryptio
 
 | Slash command | When it runs | What it does |
 |---------------|--------------|--------------|
-| `/zama-skills:init` | "init zama project", "new fhevm dapp", "scaffold confidential token", empty dir | Forks `fhevm-react-template`, asks for use-case (token / voting / auction / custom), wires pinned versions, generates `.env.example` + MetaMask Sepolia deep-link |
-| `/zama-skills:contract` | "write fhevm contract", "confidential token", "euint", "FHE.allow"; editing `.sol` in fhevm project | Authors confidential contracts with `euint`/`ebool`/`eaddress`, ACL `FHE.allowThis`, OZ Confidential Contracts (ERC-7984); rejects `require(decrypt(...))` cleartext leaks |
-| `/zama-skills:test` | "test fhevm", "mock encrypted input", "decrypt assertion", "sepolia integration test" | Generates mock + Sepolia integration tests with `@fhevm/hardhat-plugin`, decrypt assertions, HCU-budget warnings |
-| `/zama-skills:deploy` | manual only — explicit `/zama-skills:deploy` invocation; never auto-triggers | Deploys to Sepolia + verifies on Etherscan + auto-registers Confidential Token Registry; pulls live addresses, never pins |
-| `/zama-skills:frontend` | "fhevm frontend", "relayer sdk", "useDecrypted"; editing `src/` or `app/` in fhevm project | Wires `@zama-fhe/relayer-sdk`, `useDecrypted` hook with relayer UX states, ethers v6 + typechain, encrypted-input components |
-| `/zama-skills:design` | "I have an idea", "design my dApp", "plan a confidential auction", before any scaffolding | Reads your use-case, queries context7 against `/zama-ai/fhevm` + OZ Confidential, produces `DESIGN.md` (contract architecture + ACL strategy) and `UI-WIREFRAME.md` (component tree + 4-state UX flows) |
-| `/zama-skills:audit` | "audit this contract", "check FHE bugs", post-`/zama-contract` review | Scans Solidity + TS for ACL gaps, cleartext leaks (require/event), HCU explosions (>12 FHE ops/fn), deprecated imports — exits 0/1/2 for CI |
-| `/zama-skills:debug` | "I got an FHE error", paste a stack trace | Matches your error against a 10+ pattern catalog (ACL revert, `initSDK undefined`, deprecated imports, HCU exceeded, SSR `indexedDB`, etc.) — returns root cause + fix command |
-| `/zama-skills:doctor` | "check zama setup", "what's missing", first-time install verification | Read-only diagnostic — checks Node, pnpm, git, `context7` MCP (required), `magic` MCP (recommended), Sepolia RPC reachability, plugin install status. Prints fix commands for whatever is missing. |
-| `/zama-skills:autonomous` | "do everything", "full pipeline", "build me a confidential dApp", first-time users | One-command orchestrator — runs design → init → contract → test → audit → deploy → frontend in sequence. Pauses at safety gates (design review, audit findings, manual deploy). Resumable via `--resume`. State at `.planning/v1-autonomous/state.json`. |
+| `/zama-init` | "init zama project", "new fhevm dapp", "scaffold confidential token", empty dir | Forks `fhevm-react-template`, asks for use-case (token / voting / auction / custom), wires pinned versions, generates `.env.example` + MetaMask Sepolia deep-link |
+| `/zama-contract` | "write fhevm contract", "confidential token", "euint", "FHE.allow"; editing `.sol` in fhevm project | Authors confidential contracts with `euint`/`ebool`/`eaddress`, ACL `FHE.allowThis`, OZ Confidential Contracts (ERC-7984); rejects `require(decrypt(...))` cleartext leaks |
+| `/zama-test` | "test fhevm", "mock encrypted input", "decrypt assertion", "sepolia integration test" | Generates mock + Sepolia integration tests with `@fhevm/hardhat-plugin`, decrypt assertions, HCU-budget warnings |
+| `/zama-deploy` | manual only — explicit `/zama-deploy` invocation; never auto-triggers | Deploys to Sepolia + verifies on Etherscan + auto-registers Confidential Token Registry; pulls live addresses, never pins |
+| `/zama-frontend` | "fhevm frontend", "relayer sdk", "useDecrypted"; editing `src/` or `app/` in fhevm project | Wires `@zama-fhe/relayer-sdk`, `useDecrypted` hook with relayer UX states, ethers v6 + typechain, encrypted-input components |
+| `/zama-design` | "I have an idea", "design my dApp", "plan a confidential auction", before any scaffolding | Reads your use-case, queries context7 against `/zama-ai/fhevm` + OZ Confidential, produces `DESIGN.md` (contract architecture + ACL strategy) and `UI-WIREFRAME.md` (component tree + 4-state UX flows) |
+| `/zama-audit` | "audit this contract", "check FHE bugs", post-`/zama-contract` review | Scans Solidity + TS for ACL gaps, cleartext leaks (require/event), HCU explosions (>12 FHE ops/fn), deprecated imports — exits 0/1/2 for CI |
+| `/zama-debug` | "I got an FHE error", paste a stack trace | Matches your error against a 10+ pattern catalog (ACL revert, `initSDK undefined`, deprecated imports, HCU exceeded, SSR `indexedDB`, etc.) — returns root cause + fix command |
+| `/zama-doctor` | "check zama setup", "what's missing", first-time install verification | Read-only diagnostic — checks Node, pnpm, git, `context7` MCP (required), `magic` MCP (recommended), Sepolia RPC reachability, plugin install status. Prints fix commands for whatever is missing. |
+| `/zama-autonomous` | "do everything", "full pipeline", "build me a confidential dApp", first-time users | One-command orchestrator — runs design → init → contract → test → audit → deploy → frontend in sequence. Pauses at safety gates (design review, audit findings, manual deploy). Resumable via `--resume`. State at `.planning/v1-autonomous/state.json`. |
 
-`/zama-skills:deploy` has `disable-model-invocation: true` — Claude **will not** auto-deploy on its own. You must invoke it explicitly.
+`/zama-deploy` has `disable-model-invocation: true` — Claude **will not** auto-deploy on its own. You must invoke it explicitly.
 
 ## Try it live
 
@@ -211,17 +211,17 @@ Building a confidential dApp on Zama Protocol requires juggling: pinned `@fhevm/
 plugins/zama-skills/
 ├── .claude-plugin/plugin.json        ← manifest
 └── skills/
-    ├── init/SKILL.md                 ← /zama-skills:init   (auto-invoke, context: fork)
-    ├── contract/SKILL.md             ← /zama-skills:contract
-    ├── test/SKILL.md                 ← /zama-skills:test
-    ├── deploy/SKILL.md               ← /zama-skills:deploy (manual only)
-    ├── frontend/SKILL.md             ← /zama-skills:frontend
-    ├── design/SKILL.md               ← /zama-skills:design  (plan/blueprint, v1.1)
-    ├── audit/SKILL.md                ← /zama-skills:audit   (FHE-aware code review, v1.1)
-    └── debug/SKILL.md                ← /zama-skills:debug   (error → fix matcher, v1.1)
+    ├── init/SKILL.md                 ← /zama-init   (auto-invoke, context: fork)
+    ├── contract/SKILL.md             ← /zama-contract
+    ├── test/SKILL.md                 ← /zama-test
+    ├── deploy/SKILL.md               ← /zama-deploy (manual only)
+    ├── frontend/SKILL.md             ← /zama-frontend
+    ├── design/SKILL.md               ← /zama-design  (plan/blueprint, v1.1)
+    ├── audit/SKILL.md                ← /zama-audit   (FHE-aware code review, v1.1)
+    └── debug/SKILL.md                ← /zama-debug   (error → fix matcher, v1.1)
 ```
 
-The plugin is a single Claude Code marketplace at the repo root. Skill folder names drop the `zama-` prefix (the plugin namespace already supplies it) so commands read `/zama-skills:init` not `/zama-skills:zama-init`.
+The plugin is a single Claude Code marketplace at the repo root. Skill folder names drop the `zama-` prefix (the plugin namespace already supplies it) so commands read `/zama-init` not `/zama-zama-init`.
 
 ## CI / quality gates
 
@@ -236,7 +236,7 @@ The plugin is a single Claude Code marketplace at the repo root. Skill folder na
 |-------|--------|------|
 | 1 — Plugin Foundation + CI | Done | Marketplace + manifests + 5 SKILL.md skeletons + CI gating |
 | 2 — Shared Infrastructure | Done | Pinned versions, deprecated-imports list, transclusion build engine |
-| 3 — `/zama-skills:init` | Done | Headline scaffolding skill — full flow |
+| 3 — `/zama-init` | Done | Headline scaffolding skill — full flow |
 | 4 — Remaining 4 skills | Done | contract, test, deploy, frontend |
 | 5 — Reference example dApp | Done | Confidential token deployed on Sepolia + live frontend |
 | 6 — Distribution / submission | Active | npm publish, README polish, demo video, submit |
