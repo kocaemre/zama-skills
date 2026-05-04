@@ -71,8 +71,8 @@ export function useDecrypted<T = bigint>(args: UseDecryptedArgs): UseDecryptedRe
           createEIP712: (
             publicKey: string,
             contractAddresses: string[],
-            startTimestamp: string,
-            durationDays: string,
+            startTimestamp: number,
+            durationDays: number,
           ) => {
             domain: Record<string, unknown>;
             types: Record<string, unknown>;
@@ -85,8 +85,8 @@ export function useDecrypted<T = bigint>(args: UseDecryptedArgs): UseDecryptedRe
             signature: string,
             contractAddresses: string[],
             userAddress: string,
-            startTimestamp: string,
-            durationDays: string,
+            startTimestamp: number,
+            durationDays: number,
           ) => Promise<Record<string, bigint | string | boolean>>;
         };
 
@@ -94,8 +94,11 @@ export function useDecrypted<T = bigint>(args: UseDecryptedArgs): UseDecryptedRe
         const keypair = instance.generateKeypair();
 
         // 2. EIP-712 envelope: bind public key + contracts + validity window.
-        const startTimestamp = Math.floor(Date.now() / 1000).toString();
-        const durationDays = "10";
+        // Per @zama-fhe/relayer-sdk@0.4.2 zod schema, startTimestamp + durationDays
+        // are UintNumber (number), not string — older docs (and the rust SDK
+        // example) showed them as string but TS validators reject string in 0.4.x.
+        const startTimestamp = Math.floor(Date.now() / 1000);
+        const durationDays = 10;
         const contractAddresses = [contractAddress];
 
         const eip712 = instance.createEIP712(
