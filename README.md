@@ -8,6 +8,8 @@
 
 **Differentiator:** Every code-generating skill (`/zama-contract`, `/zama-test`, `/zama-frontend`, `/zama-audit`, `/zama-debug`) queries [context7](https://github.com/upstash/context7) MCP for live Zama documentation before emitting code — `/zama-ai/fhevm` (1,772 snippets), `/zama-ai/fhevm-hardhat-template`, `/websites/openzeppelin_confidential-contracts`. APIs are checked against current docs, not the model's training cut-off, so deprecated packages and renamed symbols don't slip through.
 
+On top of that, **`/zama-contract` refuses 12 forbidden cleartext-leak patterns** at generation time — `require(FHE.decrypt(x))`, `if (FHE.decrypt(x))`, comparing `euint` handles with `==`/`<`/`>`, branching on cleartext `ebool`, decrypting storage slots, and others. The static guard fires even when the user explicitly asks for the pattern, and `/zama-audit` re-runs the same checks plus ACL-grant verification across the whole repo.
+
 ## Prerequisites
 
 | Tool | Why | Install |
