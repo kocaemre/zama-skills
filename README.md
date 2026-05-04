@@ -1,6 +1,6 @@
 # zama-skills
 
-> Zama Protocol skill pack for Claude Code — boş dizinden çalışan confidential dApp'e 30 dakika.
+> Zama Protocol skill pack for Claude Code — from an empty directory to a working confidential dApp in 30 minutes.
 
 [![CI](https://github.com/kocaemre/zama-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/kocaemre/zama-skills/actions) [![npm](https://img.shields.io/npm/v/zama-skills?logo=npm&label=npm)](https://www.npmjs.com/package/zama-skills) [![Sepolia Verified](https://img.shields.io/badge/Sepolia-Verified-brightgreen?logo=ethereum)](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code) [![Vercel Live](https://img.shields.io/badge/Vercel-Live-black?logo=vercel)](https://zama-skills.vercel.app) <!-- @sync:vercel-url -->
 
@@ -24,12 +24,19 @@ npx zama-skills install
 
 ## Demo
 
+<!-- @sync:demo-video -->
+[**▶ Watch the 2-minute walkthrough**](https://youtu.be/<VIDEO_ID>)
+&nbsp;&nbsp;·&nbsp;&nbsp;
+[Live dApp](https://zama-skills.vercel.app)
+&nbsp;&nbsp;·&nbsp;&nbsp;
+[Verified contract](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code)
+
 <!-- @sync:demo-gif -->
 ![demo placeholder — see docs/demo-gif-capture.md](examples/confidential-token/docs/demo.gif)
 
-90-second walkthrough: `marketplace add` → `/zama-skills:init token` → `pnpm hardhat compile` → live decrypt on Sepolia. Capture instructions in [`docs/demo-gif-capture.md`](docs/demo-gif-capture.md).
+Voice-over walkthrough: `marketplace add` → `/zama-design` → `/zama-init` → `/zama-contract` → `/zama-deploy` (live Sepolia) → MetaMask decrypt on the live dApp. See [`docs/demo-video-script.md`](docs/demo-video-script.md) for the recording script and [`docs/demo-gif-capture.md`](docs/demo-gif-capture.md) for the silent GIF.
 
-## What you get — 5 skills
+## What you get — 8 skills
 
 | Slash command | When it runs | What it does |
 |---------------|--------------|--------------|
