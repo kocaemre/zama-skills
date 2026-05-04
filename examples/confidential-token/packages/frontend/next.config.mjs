@@ -12,6 +12,20 @@ const nextConfig = {
   // CRITICAL note: do NOT hand-edit the scaffold). Plan 03 will wrap these modules
   // through typed barrels; until then we let `next build` skip the strict check.
   typescript: { ignoreBuildErrors: true },
+  // @zama-fhe/relayer-sdk/web uses WebAssembly threads → SharedArrayBuffer →
+  // requires Cross-Origin Isolation. Without these headers initSDK() fails
+  // silently and every downstream call throws "no cached instance".
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
+        ],
+      },
+    ];
+  },
   webpack: (config) => {
     // RainbowKit + WalletConnect pull in optional `pino-pretty` / `lokijs` /
     // `encoding` that are not needed in the browser. MetaMask SDK references
