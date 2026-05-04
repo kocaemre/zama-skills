@@ -9,9 +9,18 @@
 // would fail without the env var. Components query `getTokenAddress()` at
 // render time and fall back to a helpful UX message if the address is missing.
 
-import TokenAbi from "./abi/Token.json";
+import TokenArtifact from "./abi/Token.json";
 
-export const TOKEN_ABI = TokenAbi;
+// Token.json is a Hardhat artifact ({ contractName, abi: [...] }). wagmi's
+// useReadContract / useWriteContract expect the bare ABI array — passing the
+// whole artifact crashes with "r.filter is not a function" inside viem when
+// it scans for the function entry. Unwrap here so every component gets the
+// right shape.
+type ArtifactShape = { abi?: unknown };
+const artifact = TokenArtifact as unknown as ArtifactShape;
+export const TOKEN_ABI = (Array.isArray(artifact.abi)
+  ? artifact.abi
+  : TokenArtifact) as readonly unknown[];
 
 const RAW_ADDR = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? "";
 
