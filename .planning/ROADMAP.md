@@ -116,7 +116,13 @@
   3. `generic/{zama-init,zama-contract,zama-test,zama-deploy,zama-frontend}.md` exist and are bit-identical to fresh output of `node scripts/generate-generic.mjs` (CI drift check green); `THIRD_PARTY_LICENSES.md` lists fhEVM (BSD-3-Clause-Clear), OZ Confidential Contracts, and FHE.js with correct attributions.
   4. Clean-VM end-to-end test (documented in `docs/release-checklist.md`) was completed ≥24h before deadline: fresh OS → install Claude Code → `/plugin marketplace add` → `/plugin install` → `/zama-init token` → deploy to Sepolia → frontend live — all working.
   5. Submission form filled and submitted by 2026-05-09 (≥24h before 2026-05-10 23:59 AOE deadline) with GitHub repo URL + npm package URL.
-**Plans**: TBD
+**Plans**: 6 plans
+  - [ ] 06-01-PLAN.md — README hero rewrite + demo GIF capture instructions (DIST-01)
+  - [ ] 06-02-PLAN.md — generic/*.md generator + 5 docs + CI drift gate (DIST-02)
+  - [ ] 06-03-PLAN.md — THIRD_PARTY_LICENSES.md audit (DIST-03)
+  - [ ] 06-04-PLAN.md — package.json polish + real install CLI + npm publish handoff (PLUGIN-05, DIST-04)
+  - [ ] 06-05-PLAN.md — repo public + marketplace install verification (DIST-05)
+  - [ ] 06-06-PLAN.md — clean-VM smoke + submission checklist + bounty submit (DIST-06, DIST-07)
 
 ## Progress
 
@@ -127,7 +133,7 @@
 | 3. /zama-init End-to-End [CRITICAL PATH] | 0/7 | Planned | - |
 | 4. Other 4 Skills | 0/0 | Not started | - |
 | 5. Reference Example dApp | 0/0 | Not started | - |
-| 6. Distribution + Submission | 0/0 | Not started | - |
+| 6. Distribution + Submission | 0/6 | Planned | - |
 
 ## Coverage Summary
 
