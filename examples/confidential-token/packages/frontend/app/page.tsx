@@ -1,14 +1,12 @@
-import { Hero } from "@/components/Hero";
-import { Connect } from "@/components/Connect";
-import { BalanceCard } from "@/components/BalanceCard";
-import { MintButton } from "@/components/MintButton";
-import { TransferForm } from "@/components/TransferForm";
+"use client";
 
-// Disable static prerender — wagmi + RainbowKit's WalletConnect connector
-// touches `indexedDB` / `window` at module init, which is not available in
-// the Next.js server runtime. `force-dynamic` defers rendering to the
-// client, which is fine for a single-page dApp.
-export const dynamic = "force-dynamic";
+import dynamic from "next/dynamic";
+
+const Hero = dynamic(() => import("@/components/Hero").then((m) => m.Hero), { ssr: false });
+const Connect = dynamic(() => import("@/components/Connect").then((m) => m.Connect), { ssr: false });
+const BalanceCard = dynamic(() => import("@/components/BalanceCard").then((m) => m.BalanceCard), { ssr: false });
+const MintButton = dynamic(() => import("@/components/MintButton").then((m) => m.MintButton), { ssr: false });
+const TransferForm = dynamic(() => import("@/components/TransferForm").then((m) => m.TransferForm), { ssr: false });
 
 export default function Page() {
   return (
