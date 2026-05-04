@@ -19,47 +19,253 @@
 
 After install, verify with **`/zama-doctor`** — it checks every requirement and prints fix commands for whatever is missing.
 
-## Install
+## Install — pick your AI tool
 
-### For Claude Code users (richest experience — slash commands + auto-routing)
+Click the section that matches your editor / agent. Claude Code gets the richest experience (slash commands + auto-routing); every other tool gets the same skill content as portable markdown rules.
+
+> Don't see your tool? Pick **Generic** at the bottom — it drops a self-contained `zama-skills-knowledge/` folder you can hand-point any AI agent at.
+
+<details>
+<summary><b>🟡 Claude Code</b> — slash commands, auto-routing, full pipeline (recommended)</summary>
+
+### Install (one-time)
 
 ```bash
 /plugin marketplace add github.com/kocaemre/zama-skills
 /plugin install zama-skills@zama-skills
-/zama-doctor                     # confirm Node/pnpm/context7/magic are ready
+/zama-doctor                # verifies Node ≥ 20, pnpm, context7 + magic MCP
 ```
 
-### For everyone else (Cursor, OpenCode, Codex CLI, Aider, Continue, generic)
-
-The npm package ships an interactive multi-tool installer. Run it in your project root:
+Optional alternative — install via npm without the marketplace (e.g. global personal install):
 
 ```bash
-npx zama-skills install
+npx zama-skills@latest install --tool claude-code             # writes to ./.claude/skills (this project only)
+npx zama-skills@latest install --tool claude-code --scope personal   # writes to ~/.claude/skills (every project)
 ```
 
-You'll get a checklist:
+### How to use
+
+In any project, just type a slash command — Claude Code picks the next skill from each closing summary:
 
 ```
-zama-skills installer
-Select every AI tool you want the skill rules installed for.
-
-❯ ◉ Claude Code (detected)    Native plugin (slash commands, auto-routing)
-  ◉ Cursor                    Rules under .cursor/rules/zama-skills/
-  ◯ OpenCode                  Rules + AGENTS.md pointer
-  ◯ Codex CLI (OpenAI)        AGENTS.md convention
-  ◯ Aider                     CONVENTIONS.md pointer
-  ◯ Continue (VS Code)        .continue/rules/
-  ◯ Generic (any AI tool)     zama-skills-knowledge/ + README
+/zama-autonomous            # one command, full pipeline (design → … → frontend)
+/zama-design                # or run skills individually:
+/zama-init                  # scaffold pnpm monorepo
+/zama-contract              # author confidential .sol with verified ACL
+/zama-test                  # mock + Sepolia tests
+/zama-audit                 # FHE-aware review (must pass before deploy)
+/zama-deploy                # Sepolia + Etherscan verify (manual confirm)
+/zama-frontend              # wire @zama-fhe/relayer-sdk
+/zama-debug                 # match an FHE error to a fix command
+/zama-doctor                # diagnose env at any time
 ```
 
-Tools you already use are pre-detected. Press SPACE to toggle, ENTER to confirm. The installer drops the right asset format into the right directory and (where supported) appends a pointer block to your master rules file (`AGENTS.md`, `CONVENTIONS.md`).
-
-Non-interactive flags for CI:
+### Update / Uninstall
 
 ```bash
-npx zama-skills install --tool cursor,opencode --force
-npx zama-skills install --all --force                  # install for every supported tool
+/plugin update zama-skills                                    # marketplace install
+npx zama-skills@latest uninstall --tool claude-code --force   # npx install
 ```
+
+</details>
+
+<details>
+<summary><b>⚫ Cursor</b> — composer + agent rules</summary>
+
+### Install
+
+```bash
+cd <your-project>
+npx zama-skills@latest install --tool cursor --force
+```
+
+Drops the rule pack at `.cursor/rules/zama-skills/`. Cursor picks it up automatically — no restart needed.
+
+### How to use
+
+Open Composer (⌘+I) or the agent panel and ask in plain English:
+
+> "init a confidential token dApp using zama-skills"
+>
+> "write the confidential transfer logic following the zama-skills contract rules"
+>
+> "wire the frontend with relayer-sdk per zama-skills/frontend.md"
+
+The `zama-skills/README.md` inside the rules folder enumerates every skill and the hard rules to enforce.
+
+### Uninstall
+
+```bash
+npx zama-skills@latest uninstall --tool cursor --force
+```
+
+</details>
+
+<details>
+<summary><b>🟢 OpenCode</b> — AGENTS.md + per-skill rules</summary>
+
+### Install
+
+```bash
+cd <your-project>
+npx zama-skills@latest install --tool opencode --force
+```
+
+Drops rules at `.opencode/rules/zama-skills/` AND idempotently appends a pointer block to your `AGENTS.md` so the OpenCode agent picks the rules up automatically.
+
+### How to use
+
+Just ask the agent — `AGENTS.md` directs it to the right skill file:
+
+> "follow zama-skills to scaffold a confidential ERC-7984 token"
+>
+> "write the deploy script per zama-skills/deploy.md"
+
+### Uninstall
+
+```bash
+npx zama-skills@latest uninstall --tool opencode --force
+```
+
+The `AGENTS.md` pointer block is stripped automatically; the rest of your file is preserved.
+
+</details>
+
+<details>
+<summary><b>🔵 Codex CLI (OpenAI)</b> — AGENTS.md convention</summary>
+
+### Install
+
+```bash
+cd <your-project>
+npx zama-skills@latest install --tool codex --force
+```
+
+Drops rules at `.codex/rules/zama-skills/` and appends an `AGENTS.md` pointer.
+
+### How to use
+
+Codex CLI scans `AGENTS.md` for project conventions. After install, run any Codex command in this directory and reference the skills by name:
+
+> "scaffold a confidential token following zama-skills/init.md"
+>
+> "audit the contract per zama-skills/audit.md hard rules"
+
+### Uninstall
+
+```bash
+npx zama-skills@latest uninstall --tool codex --force
+```
+
+</details>
+
+<details>
+<summary><b>🟣 Aider</b> — CONVENTIONS.md auto-load</summary>
+
+### Install
+
+```bash
+cd <your-project>
+npx zama-skills@latest install --tool aider --force
+```
+
+Drops rules at `.aider/zama-skills/` and appends a `CONVENTIONS.md` pointer block.
+
+### How to use
+
+Run aider with `--read` so it loads the conventions every session:
+
+```bash
+aider --read CONVENTIONS.md
+```
+
+Then prompt with skill-aware language:
+
+> "/ask follow zama-skills/contract.md to add an encrypted transfer"
+>
+> "implement the deploy script per zama-skills/deploy.md"
+
+### Uninstall
+
+```bash
+npx zama-skills@latest uninstall --tool aider --force
+```
+
+</details>
+
+<details>
+<summary><b>🟠 Continue (VS Code / JetBrains)</b> — agent context</summary>
+
+### Install
+
+```bash
+cd <your-project>
+npx zama-skills@latest install --tool continue --force
+```
+
+Drops rules at `.continue/rules/zama-skills/`. **Restart the Continue panel** so it re-reads the rules folder.
+
+### How to use
+
+Open the Continue chat and prompt with skill names:
+
+> "init a confidential dApp following zama-skills/init.md"
+>
+> "review this Solidity per zama-skills/audit.md"
+
+### Uninstall
+
+```bash
+npx zama-skills@latest uninstall --tool continue --force
+```
+
+</details>
+
+<details>
+<summary><b>⚪ Any other AI tool (Generic)</b> — portable knowledge pack</summary>
+
+### Install
+
+```bash
+cd <your-project>
+npx zama-skills@latest install --tool generic --force
+```
+
+Drops a self-contained folder at `zama-skills-knowledge/` with one markdown file per skill plus a `README.md` enumerating the hard rules. Works with any AI tool that can read project files (Codeium, JetBrains AI, custom agents, etc.).
+
+### How to use
+
+Tell your AI agent (in its system prompt or rules config):
+
+> "Read `zama-skills-knowledge/README.md` and the per-skill files under that folder. Follow the **Hard rules** section verbatim when writing fhEVM code."
+
+### Uninstall
+
+```bash
+npx zama-skills@latest uninstall --tool generic --force
+```
+
+</details>
+
+<details>
+<summary><b>🔥 Install for several tools at once</b> (or all, non-interactive CI)</summary>
+
+```bash
+# Interactive multi-select picker (Claude Code is auto-pre-selected)
+npx zama-skills@latest install
+
+# Specific tools
+npx zama-skills@latest install --tool claude-code,cursor,opencode --force
+
+# Every supported tool (CI-friendly)
+npx zama-skills@latest install --all --force
+```
+
+The interactive picker auto-detects which tools you already use (`.claude/`, `.cursor/`, `AGENTS.md`, `.aider.conf.yml`, etc.) and pre-selects them.
+
+</details>
+
+> Re-running `install` is idempotent — it's safe to run any time you want to refresh your local copy after a `zama-skills` release.
 
 ### Where do the rules go? (project vs global scope)
 
