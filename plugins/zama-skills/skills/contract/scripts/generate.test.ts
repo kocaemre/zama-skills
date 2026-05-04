@@ -287,7 +287,7 @@ describe("generateContract", () => {
       "utf8",
     );
     expect(src).toMatch(
-      /from "@openzeppelin\/confidential-contracts\/token\/ERC7984\.sol"/,
+      /from "@openzeppelin\/confidential-contracts\/token\/ERC7984\/ERC7984\.sol"/,
     );
     expect(src).toMatch(/is ERC7984/);
   });
