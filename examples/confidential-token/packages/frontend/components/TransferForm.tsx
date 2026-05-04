@@ -27,6 +27,7 @@ import { EncryptedInput } from "@zama/components/EncryptedInput";
 import {
   TOKEN_ABI,
   TOKEN_ADDRESS,
+  TOKEN_DECIMALS,
   TOKEN_SYMBOL,
   isTokenAddressConfigured,
   MISSING_ADDRESS_HELP,
