@@ -1,6 +1,6 @@
 # /zama-debug — Pattern Catalog
 
-Patterns registered: **10**
+Patterns registered: **11**
 
 This catalog is the human-readable mirror of `scripts/lib/patterns.ts`. CI
 asserts that every entry in `patterns.ts` has a matching `### <name>`
@@ -143,6 +143,23 @@ Each entry: regex hint → likely cause → concrete fix → reference.
 **Reference:** context7 `/zama-ai/fhevm-hardhat-template` `topic=deploy`
 
 ---
+
+### wagmi-abi-artifact-shape
+
+**Trigger:** Runtime error in production frontend: `r.filter is not a function` (or `abi.filter is not a function`) when clicking a wagmi-wired button.
+
+**Cause:** The ABI passed to `useReadContract` / `useWriteContract` is a Hardhat artifact object (`{contractName, abi: [...]}`) instead of the bare ABI array. wagmi's underlying viem call does `abi.filter(...)` to find the function entry; root objects have no `.filter` method.
+
+**Fix:**
+1. In the frontend module that imports the ABI:
+   ```ts
+   import TokenArtifact from "./abi/Token.json";
+   export const TOKEN_ABI = (TokenArtifact as any).abi ?? TokenArtifact;
+   ```
+2. Or change `sync-frontend-abi.ts` to write only `artifact.abi` (the array) instead of the full artifact JSON.
+3. Hard-refresh the frontend after redeploy to bust the stale chunk.
+
+**Reference:** context7 `/zama-ai/fhevm` `topic=frontend` + viem ABI shape docs
 
 ### zama-config-not-found
 

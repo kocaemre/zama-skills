@@ -162,6 +162,21 @@ export const PATTERNS: DebugPattern[] = [
     reference: "context7 /zama-ai/fhevm-hardhat-template topic=deploy",
   },
   {
+    name: "wagmi-abi-artifact-shape",
+    label: "wagmi runtime: r.filter is not a function (ABI artifact shape)",
+    pattern: /(r\.filter is not a function|abi\.filter is not a function|filter is not a function)/i,
+    cause:
+      "The ABI passed to `useReadContract` / `useWriteContract` is a Hardhat artifact object (`{contractName, abi: [...]}`) instead of the bare ABI array. wagmi's underlying viem call does `abi.filter(...)` to find the function entry — root objects have no `.filter` method, so it throws this exact message in production builds.",
+    fix: [
+      "In the frontend module that imports the ABI, unwrap before exporting:",
+      'import TokenArtifact from "./abi/Token.json";',
+      "export const TOKEN_ABI = (TokenArtifact as any).abi ?? TokenArtifact;",
+      "Or: change `sync-frontend-abi.ts` to write only `artifact.abi` (the array) instead of the full hardhat artifact JSON.",
+      "Hard-refresh the frontend after redeploy to bust the stale chunk.",
+    ],
+    reference: "context7 /zama-ai/fhevm topic=frontend + viem ABI shape docs",
+  },
+  {
     name: "zama-config-not-found",
     label: "Solidity compile: ZamaEthereumConfig not found",
     pattern: /(ZamaEthereumConfig|ZamaConfig\.sol)[^\n]*(not found|undeclared|cannot find)/i,
