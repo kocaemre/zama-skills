@@ -1,7 +1,7 @@
 ---
 name: zama-deploy
 description: Deploy compiled fhEVM contracts to Sepolia testnet, verify on Etherscan, and (if applicable) auto-register with the Confidential Token Registry. Use ONLY when the user explicitly asks to deploy.
-when_to_use: User has compiled contracts and explicitly types "/zama-skills:deploy" or asks to deploy to Sepolia. Never auto-invoke — destructive on-chain action.
+when_to_use: User has compiled contracts and explicitly types "/zama-deploy" or asks to deploy to Sepolia. Never auto-invoke — destructive on-chain action.
 disable-model-invocation: true
 allowed-tools: AskUserQuestion Bash(pnpm hardhat *) Bash(npx hardhat *) Bash(pnpm tsx *) Bash(npx tsx *) Bash(node *) Bash(cat *) Bash(ls *) Read Write Edit WebFetch
 ---
@@ -279,9 +279,9 @@ VITE_{{NAME_UPPER}}_ADDRESS={{address}}
 ### Next: run `/zama-frontend` to wire UI hooks to `{{address}}`.
 <!-- @endsync -->
 
-# /zama-skills:deploy — Sepolia Deploy + Verify + Register Workflow
+# /zama-deploy — Sepolia Deploy + Verify + Register Workflow
 
-> **`disable-model-invocation: true`** — Claude **MUST NEVER** auto-invoke this skill. The user must explicitly type `/zama-skills:deploy` or unambiguously request a Sepolia deployment. This is a destructive on-chain action: real (test) ETH is spent, contracts become world-visible, and accidental mainnet pushes are unrecoverable.
+> **`disable-model-invocation: true`** — Claude **MUST NEVER** auto-invoke this skill. The user must explicitly type `/zama-deploy` or unambiguously request a Sepolia deployment. This is a destructive on-chain action: real (test) ETH is spent, contracts become world-visible, and accidental mainnet pushes are unrecoverable.
 
 ## ⛔ ABORT-IF-MAINNET
 
@@ -322,7 +322,7 @@ Run `Bash(node ${CLAUDE_SKILL_DIR}/scripts/lib/env-validate.ts)` (the script aut
   - MNEMONIC|PRIVATE_KEY  (need at least one)
 ```
 
-If non-zero exit → **STOP**. Skill prints the named list verbatim and a one-liner: "Add the missing vars to `.env` then re-run `/zama-skills:deploy`." No compile, no deploy.
+If non-zero exit → **STOP**. Skill prints the named list verbatim and a one-liner: "Add the missing vars to `.env` then re-run `/zama-deploy`." No compile, no deploy.
 
 ### Step 2 — Compile
 
@@ -375,7 +375,7 @@ If no `is ERC7984` match → skip Step 5 entirely with a one-line note: "Skippin
 Print to the user:
 
 ```
-## ✅ /zama-skills:deploy complete
+## /zama-deploy complete
 
 ### Deployed
 - Contract:   <Name>

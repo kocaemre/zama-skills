@@ -6,7 +6,7 @@ ALCHEMY_API_KEY=
 MNEMONIC=
 # Etherscan API key for contract verification: https://etherscan.io/myapikey
 ETHERSCAN_API_KEY=
-# Zama relayer (verify current URL via context7 /zama-ai/fhevm topic:"relayer" before changing)
-RELAYER_URL=https://relayer.testnet.zama.cloud
+# Zama relayer URL — fetch live from https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia (or via context7 /zama-ai/fhevm topic:"relayer"). Do not pin in committed code.
+RELAYER_URL=
 # Sepolia RPC URL — derived from INFURA_API_KEY at runtime by hardhat.config.ts; override only if using a custom provider.
 SEPOLIA_RPC_URL=

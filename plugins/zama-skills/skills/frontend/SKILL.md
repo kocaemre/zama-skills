@@ -325,7 +325,8 @@ import { useDecrypted } from "@/hooks/useDecrypted";
 import { EncryptedInput } from "@/components/EncryptedInput";
 
 function CounterPanel({ contractAddress, handle }: { contractAddress: `0x${string}`; handle: string | null }) {
-  const decrypt = useDecrypted<bigint>(handle);
+  // useDecrypted requires { handle, contractAddress } — the contract addr scopes the decryption ACL.
+  const decrypt = useDecrypted<bigint>({ handle, contractAddress });
 
   return (
     <>

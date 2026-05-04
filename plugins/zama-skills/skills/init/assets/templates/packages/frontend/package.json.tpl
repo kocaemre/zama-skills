@@ -9,10 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.59.0",
     "@zama-fhe/relayer-sdk": "<!-- @pin:@zama-fhe/relayer-sdk -->",
     "ethers": "<!-- @pin:ethers -->",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "viem": "^2.21.0",
+    "wagmi": "^2.13.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",

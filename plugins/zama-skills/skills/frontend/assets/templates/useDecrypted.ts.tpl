@@ -71,6 +71,8 @@ export function useDecrypted<T = bigint>(args: UseDecryptedArgs): UseDecryptedRe
 
     void (async () => {
       try {
+        // @zama-fhe/relayer-sdk@0.4.x ships incomplete type declarations; cast spells out
+        // the methods we use. Drop this when the SDK exports proper TS types upstream.
         const instance = (await getFhevmInstance()) as unknown as {
           generateKeypair: () => { publicKey: string; privateKey: string };
           createEIP712: (

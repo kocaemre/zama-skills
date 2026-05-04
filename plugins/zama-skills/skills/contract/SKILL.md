@@ -309,7 +309,7 @@ Re-prompt if invalid. Reject path-traversal segments (e.g., `..`, `/`, `\`).
 |--------|-------------|
 | `ERC7984 (confidential token)` | Extends `@openzeppelin/confidential-contracts/token/ERC7984.sol`. Use for confidential ERC-20-style tokens. |
 | `VotesConfidential (governance)` | Extends `@openzeppelin/confidential-contracts/governance/VotesConfidential.sol`. Use for confidential voting / DAOs. |
-| `Standalone` | No base contract beyond `SepoliaConfig`. Use for custom logic (auctions, escrows, counters). |
+| `Standalone` | No base contract beyond `ZamaEthereumConfig` (renamed from `SepoliaConfig` in @fhevm/solidity 0.11.x). Use for custom logic (auctions, escrows, counters). |
 | `Ownable extension` | `Standalone` + `Ownable` from `@openzeppelin/contracts/access/Ownable.sol`. |
 
 **Q3 — State schema** (repeat-prompt loop)
