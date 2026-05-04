@@ -104,9 +104,21 @@ export function EncryptedInput(props: EncryptedInputProps): JSX.Element {
 
       const stage = adder.call(builder, asBig) as { encrypt: () => Promise<{ handles: string[]; inputProof: string }> };
       const out = await stage.encrypt();
-      const handle = out.handles[0];
-      if (!handle) throw new Error("relayer returned no handle");
-      onEncrypted({ handle, inputProof: out.inputProof });
+      const rawHandle = out.handles[0];
+      if (!rawHandle) throw new Error("relayer returned no handle");
+      // SDK returns Uint8Array for handles[]/inputProof despite the TS shape
+      // saying string. wagmi/viem expect 0x-hex; convert here so callers get
+      // ready-to-pass values (avoids 'e.replace is not a function' inside viem).
+      const toHex = (v: unknown): `0x${string}` => {
+        if (typeof v === "string") return v.startsWith("0x") ? (v as `0x${string}`) : (`0x${v}` as `0x${string}`);
+        if (v instanceof Uint8Array) {
+          let h = "0x";
+          for (const b of v) h += b.toString(16).padStart(2, "0");
+          return h as `0x${string}`;
+        }
+        throw new Error(`unexpected encrypt() output type: ${typeof v}`);
+      };
+      onEncrypted({ handle: toHex(rawHandle), inputProof: toHex(out.inputProof) });
       setPhase("done");
     } catch (err) {
       setErrMsg(err instanceof Error ? err.message : String(err));
