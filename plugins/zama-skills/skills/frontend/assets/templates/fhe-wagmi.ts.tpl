@@ -4,7 +4,7 @@
 // rather than the EIP-1193 injected provider. Use this when your app already manages
 // wallet state via wagmi.
 
-import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/bundle";
+import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/web";
 import { useEffect, useState } from "react";
 import { useWalletClient } from "wagmi";
 
