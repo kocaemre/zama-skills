@@ -73,8 +73,8 @@ cd "$WORK"
 
 # ---- run installer ----
 START=$(date +%s)
-info "Running: npx --yes zama-skills@latest install --scope project --force"
-if ! npx --yes zama-skills@latest install --scope project --force; then
+info "Running: npx --yes zama-skills@latest install --scope project --tool claude-code --force"
+if ! npx --yes zama-skills@latest install --scope project --tool claude-code --force; then
   err "npx zama-skills install failed."
   exit 1
 fi

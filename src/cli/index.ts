@@ -6,33 +6,78 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 import { installSkills, destinationHasExisting, type InstallScope } from './install.js';
+import { TARGETS, detectTargets, findTarget, type TargetId } from './targets.js';
 
 const program = new Command();
 
 program
   .name('zama-skills')
-  .description('Install zama-skills plugin into Claude Code')
+  .description('Install zama-skills (10 skills for confidential dApps on Zama Protocol fhEVM) into your AI agent of choice')
   .version('0.1.0');
 
 program
   .command('install')
-  .description('Copy zama-skills bundles into Claude Code skills directory')
-  .option('--scope <scope>', 'personal | project', 'personal')
-  .option('--force', 'overwrite existing skills without prompting', false)
-  .action(async (opts: { scope: string; force: boolean }) => {
-    const scope = (opts.scope === 'project' ? 'project' : 'personal') as InstallScope;
+  .description('Copy zama-skills into one or more AI agent rule directories')
+  .option('--scope <scope>', 'personal | project (project = cwd, personal = $HOME)', 'project')
+  .option(
+    '--tool <tool>',
+    'comma-separated list: claude-code,cursor,opencode,aider,continue,codex,generic. Skips the interactive picker.',
+  )
+  .option('--all', 'install for every supported tool (non-interactive)', false)
+  .option('--force', 'overwrite existing rules without prompting', false)
+  .action(async (opts: { scope: string; tool?: string; all: boolean; force: boolean }) => {
+    const scope = (opts.scope === 'personal' ? 'personal' : 'project') as InstallScope;
     const targetRoot = scope === 'project' ? process.cwd() : os.homedir();
 
-    // Resolve bundled skills relative to this file (works whether installed or run from repo).
     const here = path.dirname(fileURLToPath(import.meta.url));
     const sourceRoot = path.resolve(here, '..', '..', 'plugins', 'zama-skills', 'skills');
+    const genericRoot = path.resolve(here, '..', '..', 'generic');
+
+    // Resolve which targets to install for.
+    let targets: TargetId[];
+    if (opts.all) {
+      targets = TARGETS.map((t) => t.id);
+    } else if (opts.tool) {
+      const ids = opts.tool.split(',').map((s) => s.trim()).filter(Boolean) as TargetId[];
+      // Validate every id.
+      for (const id of ids) findTarget(id);
+      targets = ids;
+    } else {
+      // Interactive picker.
+      const detected = await detectTargets(targetRoot);
+      const choices = TARGETS.map((t) => ({
+        title: t.label + (detected.includes(t.id) ? pc.green(' (detected)') : ''),
+        description: t.description,
+        value: t.id,
+        selected: detected.includes(t.id) || t.id === 'claude-code', // default Claude Code on
+      }));
+      console.log('');
+      console.log(pc.bold(pc.cyan('zama-skills installer')));
+      console.log(pc.dim('Select every AI tool you want the skill rules installed for.'));
+      console.log(pc.dim('Use SPACE to toggle, ENTER to confirm. Detected tools are pre-selected.'));
+      console.log('');
+      const answer = await prompts({
+        type: 'multiselect',
+        name: 'targets',
+        message: 'Install for:',
+        choices,
+        instructions: false,
+        hint: 'space to toggle · enter to confirm',
+        min: 1,
+      });
+      if (!answer.targets || answer.targets.length === 0) {
+        console.log(pc.yellow('No targets selected — nothing installed.'));
+        process.exit(0);
+      }
+      targets = answer.targets as TargetId[];
+    }
 
     let force = opts.force;
-    if (!force && (await destinationHasExisting(targetRoot))) {
+    if (!force && (await destinationHasExisting(targetRoot, targets))) {
       const answer = await prompts({
         type: 'confirm',
         name: 'ok',
-        message: `Existing skills found at ${path.join(targetRoot, '.claude/skills/zama-skills')}. Overwrite?`,
+        message: `Existing rules found at one or more target dirs. Overwrite?`,
         initial: false,
       });
       if (!answer.ok) {
@@ -43,17 +88,32 @@ program
     }
 
     try {
-      const result = await installSkills({ scope, targetRoot, sourceRoot, force });
-      console.log(pc.bold(pc.green('zama-skills installed!')));
+      const result = await installSkills({
+        scope,
+        targetRoot,
+        sourceRoot,
+        genericRoot,
+        targets,
+        force,
+      });
       console.log('');
-      console.log(`  ${pc.dim('scope:')}   ${pc.cyan(result.scope)}`);
-      console.log(`  ${pc.dim('target:')}  ${pc.cyan(result.target)}`);
-      console.log(`  ${pc.dim('written:')} ${pc.cyan(String(result.written))} skill bundle(s)`);
+      console.log(pc.bold(pc.green(`✓ zama-skills installed for ${result.installed.length} target(s)`)));
       console.log('');
-      console.log(pc.bold('Next steps:'));
-      console.log(`  1. Open Claude Code in your project.`);
-      console.log(`  2. Run ${pc.green('/zama-skills:init')} to scaffold your first confidential dApp.`);
-      console.log(`  3. Read ${pc.cyan('https://github.com/kocaemre/zama-skills#readme')} for the full skill catalogue.`);
+      for (const it of result.installed) {
+        const t = findTarget(it.target);
+        console.log(`  ${pc.bold(pc.cyan(t.label))}`);
+        console.log(`    ${pc.dim('dest:')}    ${it.destDir}`);
+        console.log(`    ${pc.dim('written:')} ${it.written} file(s)`);
+        if (it.entryPointAppended) {
+          console.log(`    ${pc.dim('entry:')}   ${it.entryPointAppended} (pointer block appended)`);
+        }
+        console.log(`    ${pc.dim('hint:')}    ${t.postInstallHint(targetRoot)}`);
+        console.log('');
+      }
+      console.log(pc.bold('Pipeline order:'));
+      console.log(`  ${pc.cyan('design → init → contract → test → audit → deploy → frontend')}`);
+      console.log('');
+      console.log(pc.dim('Catalogue: https://github.com/kocaemre/zama-skills#what-you-get'));
     } catch (err) {
       console.error(pc.red('install failed:'), (err as Error).message);
       process.exit(1);

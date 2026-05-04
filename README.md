@@ -21,17 +21,44 @@ After install, verify with **`/zama-doctor`** — it checks every requirement an
 
 ## Install
 
+### For Claude Code users (richest experience — slash commands + auto-routing)
+
 ```bash
-# In Claude Code:
 /plugin marketplace add github.com/kocaemre/zama-skills
 /plugin install zama-skills@zama-skills
 /zama-doctor                     # confirm Node/pnpm/context7/magic are ready
 ```
 
-Fallback for non-Claude-Code agents or scripted setup:
+### For everyone else (Cursor, OpenCode, Codex CLI, Aider, Continue, generic)
+
+The npm package ships an interactive multi-tool installer. Run it in your project root:
 
 ```bash
 npx zama-skills install
+```
+
+You'll get a checklist:
+
+```
+zama-skills installer
+Select every AI tool you want the skill rules installed for.
+
+❯ ◉ Claude Code (detected)    Native plugin (slash commands, auto-routing)
+  ◉ Cursor                    Rules under .cursor/rules/zama-skills/
+  ◯ OpenCode                  Rules + AGENTS.md pointer
+  ◯ Codex CLI (OpenAI)        AGENTS.md convention
+  ◯ Aider                     CONVENTIONS.md pointer
+  ◯ Continue (VS Code)        .continue/rules/
+  ◯ Generic (any AI tool)     zama-skills-knowledge/ + README
+```
+
+Tools you already use are pre-detected. Press SPACE to toggle, ENTER to confirm. The installer drops the right asset format into the right directory and (where supported) appends a pointer block to your master rules file (`AGENTS.md`, `CONVENTIONS.md`).
+
+Non-interactive flags for CI:
+
+```bash
+npx zama-skills install --tool cursor,opencode --force
+npx zama-skills install --all --force                  # install for every supported tool
 ```
 
 ## Demo
