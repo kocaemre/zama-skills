@@ -43,6 +43,8 @@
     "validate": "tsx scripts/validate.ts",
     "sync": "tsx scripts/build.ts",
     "sync:check": "tsx scripts/build.ts --check",
+    "generic": "node scripts/generate-generic-docs.mjs",
+    "generic:check": "node scripts/generate-generic-docs.mjs && git diff --exit-code generic/",
     "test": "vitest run --passWithNoTests",
     "test:smoke": "ZAMA_INIT_SMOKE=1 vitest run tests/integration --passWithNoTests",
     "typecheck": "tsc --noEmit",
