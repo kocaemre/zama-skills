@@ -131,7 +131,7 @@ export const PATTERNS: DebugPattern[] = [
       "$ npx hardhat verify --network sepolia <addr> [args...]",
     ],
     reference:
-      "https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify",
+      "https://v2.hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify",
   },
   {
     name: "relayer-timeout",

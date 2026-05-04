@@ -1,6 +1,6 @@
 ---
 name: zama-deploy
-description: Deploy compiled fhEVM contracts to Sepolia testnet, verify on Etherscan, and (if applicable) auto-register with the Confidential Token Registry. Use ONLY when the user explicitly asks to deploy.
+description: Deploy compiled fhEVM contracts to Sepolia testnet and verify on Etherscan. For ERC7984 tokens, the closing summary surfaces the manual-registration link to the Zama Developer Program (no on-chain registry contract is invoked). Use ONLY when the user explicitly asks to deploy.
 when_to_use: User has compiled contracts and explicitly types "/zama-deploy" or asks to deploy to Sepolia. Never auto-invoke — destructive on-chain action.
 disable-model-invocation: true
 allowed-tools: AskUserQuestion Bash(pnpm hardhat *) Bash(npx hardhat *) Bash(pnpm tsx *) Bash(npx tsx *) Bash(node *) Bash(cat *) Bash(ls *) Read Write Edit WebFetch
@@ -346,16 +346,23 @@ Capture: `address` and the deploy `txHash`.
 
 Retry **once** on rate-limit (HTTP 429 / `Max calls per sec`). On persistent failure, print a warning ("Etherscan verification skipped: <reason>. Verify manually with: pnpm hardhat verify --network sepolia <address> ...") and continue — verification failure must NOT abort downstream steps.
 
-### Step 5 — Confidential Token Registry registration (conditional)
+### Step 5 — Confidential token registry (manual)
 
-Detection: skill greps the contract source — `Bash(grep -l 'is ERC7984' packages/contracts/contracts/<Name>.sol)`.
+As of 2026-05 there is **no generic ConfidentialTokenRegistry contract** on Sepolia — the protocol-apps page only lists a "Wrappers Registry" (`0x2f0750…`) which is scoped to confidential ERC-20 wrappers. Generic confidential tokens are discovered through the Zama Developer Program (https://zama.org/developer-hub) and the project Discord.
 
-If a hit:
-1. `Bash(node ${CLAUDE_SKILL_DIR}/scripts/lib/sepolia-addresses.ts)` — fetch the live Zama Sepolia address registry via `WebFetch https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia`. The script writes `.cache/zama-addresses.json` (24-hour TTL); warm cache is reused without WebFetch. **No registry address is ever pinned in skill source.**
-2. Materialize the registration template `${CLAUDE_SKILL_DIR}/assets/templates/register-token.ts.tpl` into `scripts/register-token.ts` (substituting `{{TOKEN_ADDRESS}}` and `{{REGISTRY_ADDRESS}}` from the cache).
-3. `Bash(pnpm hardhat run --network sepolia scripts/register-token.ts)`. Capture `registryTxHash`.
+Detection: `Bash(grep -l 'is ERC7984' packages/contracts/contracts/<Name>.sol)`.
 
-If no `is ERC7984` match → skip Step 5 entirely with a one-line note: "Skipping Confidential Token Registry: contract is not ERC7984."
+If a hit, the skill writes a single line into the closing summary:
+
+```
+- Manual registration: ERC7984 tokens are discoverable through the Zama
+  Developer Program — see https://zama.org/developer-hub and the project
+  Discord for the current registration flow.
+```
+
+If no `is ERC7984` match → emit "Not applicable: contract is not ERC7984." in the registry block.
+
+The skill does **not** auto-call any registry contract — there isn't one to call. If a future Zama release ships a registry, this step will be re-enabled and `register-token.ts.tpl` (kept in `assets/templates/` for that purpose) will be materialized again.
 
 ### Step 6 — ABI export
 

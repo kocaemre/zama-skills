@@ -111,7 +111,7 @@ Each entry: regex hint → likely cause → concrete fix → reference.
 2. Set `ETHERSCAN_API_KEY` in `.env` (single multi-chain key works).
 3. `npx hardhat verify --network sepolia <addr> [args...]`.
 
-**Reference:** https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify
+**Reference:** https://v2.hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify
 
 ---
 

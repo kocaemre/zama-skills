@@ -117,7 +117,7 @@ function formatSummary(args: {
   // ERC7984 contracts get a manual-registration hint; non-ERC7984 silent.
   const registryLine = args.registrySkipped
     ? "- Not applicable: contract is not ERC7984"
-    : "- Manual registration: ERC7984 tokens are discoverable through the Zama developer program. See https://docs.zama.org/protocol/community/programs and the project Discord for the current registration flow.";
+    : "- Manual registration: ERC7984 tokens are discoverable through the Zama developer program. See https://zama.org/developer-hub and the project Discord for the current registration flow.";
   const txLine = args.txHash
     ? `- Tx:         https://sepolia.etherscan.io/tx/${args.txHash}\n`
     : "";

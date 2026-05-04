@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/kocaemre/zama-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/kocaemre/zama-skills/actions) [![npm](https://img.shields.io/npm/v/zama-skills?logo=npm&label=npm)](https://www.npmjs.com/package/zama-skills) [![Sepolia Verified](https://img.shields.io/badge/Sepolia-Verified-brightgreen?logo=ethereum)](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code) [![Vercel Live](https://img.shields.io/badge/Vercel-Live-black?logo=vercel)](https://zama-skills.vercel.app) <!-- @sync:vercel-url -->
 
-**Built for:** [Zama Developer Program — Mainnet Season 2 / Bounty Track](https://docs.zama.org/protocol/community/programs).
+**Built for:** [Zama Developer Program — Mainnet Season 2 / Bounty Track](https://zama.org/developer-hub).
 
 **Differentiator:** Every code-generating skill (`/zama-contract`, `/zama-test`, `/zama-frontend`, `/zama-audit`, `/zama-debug`) queries [context7](https://github.com/upstash/context7) MCP for live Zama documentation before emitting code — `/zama-ai/fhevm` (1,772 snippets), `/zama-ai/fhevm-hardhat-template`, `/websites/openzeppelin_confidential-contracts`. APIs are checked against current docs, not the model's training cut-off, so deprecated packages and renamed symbols don't slip through.
 
@@ -287,17 +287,11 @@ The CLI prints a warning if you pick `--scope personal` for a tool that won't ho
 
 ## Demo
 
-<!-- @sync:demo-video -->
-[**▶ Watch the 2-minute walkthrough**](https://youtu.be/<VIDEO_ID>)
+[Live dApp on Vercel](https://zama-skills.vercel.app)
 &nbsp;&nbsp;·&nbsp;&nbsp;
-[Live dApp](https://zama-skills.vercel.app)
-&nbsp;&nbsp;·&nbsp;&nbsp;
-[Verified contract](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code)
+[Verified contract on Sepolia Etherscan](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code)
 
-<!-- @sync:demo-gif -->
-![demo placeholder — see docs/demo-gif-capture.md](examples/confidential-token/docs/demo.gif)
-
-Voice-over walkthrough: `marketplace add` → `/zama-design` → `/zama-init` → `/zama-contract` → `/zama-deploy` (live Sepolia) → MetaMask decrypt on the live dApp. See [`docs/demo-video-script.md`](docs/demo-video-script.md) for the recording script and [`docs/demo-gif-capture.md`](docs/demo-gif-capture.md) for the silent GIF.
+Walkthrough: `/plugin marketplace add` → `/zama-design` → `/zama-init` → `/zama-contract` → `/zama-deploy` (live Sepolia) → MetaMask decrypt on the live dApp. A 2-minute screencast will be linked here once recorded.
 
 ## Quick Start — pick your path
 
@@ -453,8 +447,8 @@ The plugin is a single Claude Code marketplace at the repo root. Skill folder na
 - **npm package:** [npmjs.com/package/zama-skills](https://www.npmjs.com/package/zama-skills)
 - **Example dApp:** [`examples/confidential-token/`](examples/confidential-token/)
 - **Live demo:** [zama-skills.vercel.app](https://zama-skills.vercel.app)
-- **Roadmap:** [`.planning/ROADMAP.md`](.planning/ROADMAP.md)
-- **Contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- **Roadmap:** [`.planning/ROADMAP.md`](.planning/ROADMAP.md) (visible on the GitHub repo, not shipped in the npm tarball)
+- **Issues / contributions:** open an issue or PR on [github.com/kocaemre/zama-skills](https://github.com/kocaemre/zama-skills/issues) — bug reports, missing patterns, and pinned-version refresh PRs all welcome.
 - **License:** [`LICENSE`](LICENSE)
 - **Third-party licenses:** [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md)
 
