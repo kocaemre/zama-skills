@@ -272,8 +272,10 @@ describe("generateDesign", () => {
     expect(md).toMatch(/pending/);
     expect(md).toMatch(/decrypted/);
     expect(md).toMatch(/@zama-fhe\/relayer-sdk/);
-    // Refuses fhevmjs
-    expect(md).not.toMatch(/\bfhevmjs\b/i);
+    // Refuses fhevmjs as an actual import (prose mentions explaining the
+    // deprecation are allowed; only `import`/`from`/`require` are banned).
+    expect(md).not.toMatch(/from\s+["']fhevmjs["']/);
+    expect(md).not.toMatch(/import\s+["']fhevmjs["']/);
   });
 
   it("refuses to overwrite without force", () => {
@@ -320,6 +322,9 @@ describe("generateDesign", () => {
       force: true,
     });
     const fresh = readFileSync(r.designPath, "utf8");
-    expect(fresh).not.toMatch(/\bfhevmjs\b/i);
+    // Prose explaining the deprecation is allowed; only actual import
+    // statements are forbidden.
+    expect(fresh).not.toMatch(/import\s+["']fhevmjs["']/);
+    expect(fresh).not.toMatch(/from\s+["']fhevmjs["']/);
   });
 });
