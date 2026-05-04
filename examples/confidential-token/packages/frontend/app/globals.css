@@ -58,3 +58,18 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* /zama-frontend's EncryptedInput renders a bare <input>; theme it to match
+   shadcn's Input so dark mode shows the user's typed value. */
+.encrypted-input-wrapper {
+  @apply flex items-center gap-2;
+}
+.encrypted-input-wrapper > input {
+  @apply h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground;
+  @apply placeholder:text-muted-foreground;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  @apply disabled:cursor-not-allowed disabled:opacity-50;
+}
+.encrypted-input-wrapper > span {
+  @apply shrink-0 text-xs text-muted-foreground;
+}
