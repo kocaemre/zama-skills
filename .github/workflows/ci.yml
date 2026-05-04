@@ -41,6 +41,13 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Generic docs drift check
+        # DIST-02 (Phase 06-02). Re-runs scripts/generate-generic-docs.mjs and
+        # fails if any committed file under generic/ differs from fresh
+        # generator output. Catches the case where someone edits a SKILL.md
+        # without regenerating the non-Claude-agent rehberler.
+        run: npm run generic:check
+
       - name: Best-effort — official Claude plugin validate CLI
         # Phase 1 best-effort: try the official CLI but never block the build.
         # Phase 6 should re-evaluate once the CLI distribution package is confirmed.
