@@ -76,7 +76,6 @@ export async function installSkills(opts: InstallOptions): Promise<InstallResult
     await fs.copy(src, dst, {
       overwrite: force,
       errorOnExist: !force,
-      recursive: true,
     });
     written += 1;
   }
