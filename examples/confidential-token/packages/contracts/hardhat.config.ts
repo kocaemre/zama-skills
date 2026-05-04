@@ -84,7 +84,7 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: { sepolia: process.env.ETHERSCAN_API_KEY ?? "" },
+    apiKey: process.env.ETHERSCAN_API_KEY ?? "",
   },
   namedAccounts: { deployer: { default: 0 } },
   typechain: { outDir: "typechain-types", target: "ethers-v6" },

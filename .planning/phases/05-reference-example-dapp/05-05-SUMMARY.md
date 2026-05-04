@@ -22,7 +22,7 @@ key-files:
 decisions:
   - "Used VERCEL.md at example root (not docs/vercel-setup.md per the original plan) — matches the user's task prompt; single-file top-level docs are easier for users to discover."
   - "Pre-filled NEXT_PUBLIC_CONTRACT_ADDRESS + NEXT_PUBLIC_RELAYER_URL with the live values; user only needs to add their own RPC + WalletConnect ID."
-  - "Used <VERCEL_URL> as a literal placeholder string with <!-- @sync:vercel-url --> sibling comment so a Phase 6 sed/grep hook can patch all occurrences."
+  - "Used https://zama-skills.vercel.app as a literal placeholder string with <!-- @sync:vercel-url --> sibling comment so a Phase 6 sed/grep hook can patch all occurrences."
   - "Did not touch other root README sections; DIST-01 full hero polish is Phase 6."
 metrics:
   duration: ~10 minutes
@@ -50,7 +50,7 @@ Wired the bounty-submission landing experience: a hero README for the confidenti
 
 - **Hero first.** First viewport of `examples/confidential-token/README.md` is title + tagline + three badges + "Try it live" links — judge knows in 5 seconds whether to click through.
 - **Live data, not lorem ipsum.** Pulled the canonical address from `packages/contracts/deployments/sepolia/Token.json` (per user instruction "don't hard-code"); cross-referenced with `DEPLOYED.md` for the deploy tx hash + block number.
-- **Single sync marker.** Every `<VERCEL_URL>` placeholder is paired with an HTML comment `<!-- @sync:vercel-url -->` so a Phase 6 build hook (or `sed -i 's|<VERCEL_URL>|<actual>|g'`) can patch all four occurrences across two files in one pass.
+- **Single sync marker.** Every `https://zama-skills.vercel.app` placeholder is paired with an HTML comment `<!-- @sync:vercel-url -->` so a Phase 6 build hook (or `sed -i 's|https://zama-skills.vercel.app|<actual>|g'`) can patch all four occurrences across two files in one pass.
 - **No invented commands.** Every command in the local-dev table was verified against the existing `package.json` workspace structure (`pnpm --filter contracts`, `pnpm --filter frontend`).
 
 ## Vercel URL Fill Status
@@ -61,7 +61,7 @@ Wired the bounty-submission landing experience: a hero README for the confidenti
 3. Add the four `NEXT_PUBLIC_*` env vars (table provided in VERCEL.md)
 4. Reply with the production URL (or `deferred` to push to Phase 6)
 
-Until that reply, all `<VERCEL_URL>` markers remain as literal placeholders. EXAMPLE-03 stays "partially met" — contract live + UI scaffolded + bind-guide ready, missing only the public URL.
+Until that reply, all `https://zama-skills.vercel.app` markers remain as literal placeholders. EXAMPLE-03 stays "partially met" — contract live + UI scaffolded + bind-guide ready, missing only the public URL.
 
 ## GIF Capture Status
 

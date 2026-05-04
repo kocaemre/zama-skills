@@ -64,7 +64,7 @@ If any step fails, check the browser console for the missing env var or RPC erro
 
 ## After deployment — update the URLs
 
-Once you have the production URL, replace the `<VERCEL_URL>` placeholders in two files (both are marked with `<!-- @sync:vercel-url -->`):
+Once you have the production URL, replace the `https://zama-skills.vercel.app` placeholders in two files (both are marked with `<!-- @sync:vercel-url -->`):
 
 1. [`examples/confidential-token/README.md`](./README.md) — three occurrences (badge, Try it live link, link target)
 2. [`README.md`](../../README.md) — root README "Try it live" badge

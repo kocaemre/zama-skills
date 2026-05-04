@@ -38,7 +38,7 @@ gaps: []
 | 1 | `examples/confidential-token/` exists, hand-curated from `/zama-init`+`/zama-contract`+others, contains `.gsd-snapshot.json` | ✓ VERIFIED | Directory present with full pnpm monorepo (`packages/contracts`, `packages/frontend`, `pnpm-workspace.yaml`); `.gsd-snapshot.json` records `use_case: erc7984-confidential-token`, 5 skill commit SHAs, `pinned_versions_sha`, scaffold inputs, and skill invocation order |
 | 2a | Contract address in README opens on Sepolia Etherscan **with verified source code** | ⚠️ PARTIAL — on-chain ✓, verify ✗ | `eth_getCode` against `https://ethereum-sepolia.publicnode.com` returns 16,270 bytes of bytecode at `0x04Bd105DE7a5D3297c3747cef90ac8b760136896` (real deployed contract). DEPLOYED.md transparently documents `Verified: skipped — ETHERSCAN_API_KEY missing` with manual-verify command for user follow-up |
 | 2b | Contract appears in Confidential Token Registry | ⚠️ PARTIAL (interpretation) | DEPLOYED.md documents `Registry: skipped — Token is standalone ERC-7984 (no underlying ERC-20). Wrappers Registry expects token+wrapper pair`; this is a documented design decision that needs human protocol-level confirmation |
-| 3 | Vercel URL in README loads, allows MetaMask Sepolia connect, accepts encrypted input, submits tx, displays user-decrypted result via `useDecrypted` | ⚠️ PARTIAL — code complete, binding pending | Frontend code complete: `src/lib/fhe.ts`, `src/hooks/useDecrypted.ts`, `src/components/EncryptedInput.tsx`, `components/BalanceCard.tsx` (4-state UX), `components/MintButton.tsx`, `components/TransferForm.tsx`, `components/Connect.tsx` (RainbowKit), `.env.local.example` pre-fills contract address + relayer URL. README contains `<VERCEL_URL>` placeholder marked `<!-- @sync:vercel-url -->` with VERCEL.md providing 6-step bind walkthrough. Per project policy: skills scaffold, humans deploy |
+| 3 | Vercel URL in README loads, allows MetaMask Sepolia connect, accepts encrypted input, submits tx, displays user-decrypted result via `useDecrypted` | ⚠️ PARTIAL — code complete, binding pending | Frontend code complete: `src/lib/fhe.ts`, `src/hooks/useDecrypted.ts`, `src/components/EncryptedInput.tsx`, `components/BalanceCard.tsx` (4-state UX), `components/MintButton.tsx`, `components/TransferForm.tsx`, `components/Connect.tsx` (RainbowKit), `.env.local.example` pre-fills contract address + relayer URL. README contains `https://zama-skills.vercel.app` placeholder marked `<!-- @sync:vercel-url -->` with VERCEL.md providing 6-step bind walkthrough. Per project policy: skills scaffold, humans deploy |
 | 4 | CI smoke-diff job compares fresh `/zama-init token` output against `examples/confidential-token/` key files and passes | ✓ VERIFIED | `.github/workflows/example-smoke-diff.yml` exists (workflow runs unit tests + smoke-diff on push/PR); `scripts/example-smoke-diff.mjs` (16.5K) implements normalized package.json diff, structural Solidity invariants, hardhat config import checks, frontend deprecated-import scans, pinned-version cross-check; 40 unit tests pass; live run output: `✓ example-smoke-diff: no drift detected — example: examples/confidential-token, allowlist patterns: 3, structural invariants: 2 file(s), pinned-version cross-checks: 10 package(s)` |
 
 **Score:** 3/6 fully VERIFIED; 3/6 PARTIAL with documented user-action paths (no implementation gaps).
@@ -65,7 +65,7 @@ gaps: []
 |---|---|---|---|---|
 | Frontend `BalanceCard.tsx` | `@zama-fhe/relayer-sdk` | import | ✓ WIRED | grep confirms relayer-sdk import in BalanceCard + TransferForm + lib/fhe.ts |
 | Frontend `.env.local.example` | Sepolia contract | `NEXT_PUBLIC_CONTRACT_ADDRESS` pre-fill | ✓ WIRED | Pre-filled with deployed address `0x04Bd105…6896` |
-| Root `README.md` | Example dApp | "Try it live" link to `examples/confidential-token/` | ✓ WIRED | Link present; contract Etherscan link present; Vercel `<VERCEL_URL>` is placeholder |
+| Root `README.md` | Example dApp | "Try it live" link to `examples/confidential-token/` | ✓ WIRED | Link present; contract Etherscan link present; Vercel `https://zama-skills.vercel.app` is placeholder |
 | `examples/confidential-token/README.md` | Sepolia Etherscan | Contract badge + inline link | ✓ WIRED | Badge URL points to `#code` tab on Etherscan |
 | Smoke-diff script | Pinned versions | `plugins/zama-skills/shared/pinned-versions.json` | ✓ WIRED | 10 package cross-checks executed |
 | CI workflow | Smoke-diff script | `node scripts/example-smoke-diff.mjs` | ✓ WIRED | YAML step calls the script; tests run before |
@@ -76,7 +76,7 @@ gaps: []
 |---|---|---|---|---|
 | `BalanceCard.tsx` | encrypted balance handle | Live Sepolia contract via ethers + relayer-sdk decrypt | Yes — points to real deployed contract @ `0x04Bd105…6896` (16,270 bytes bytecode confirmed via `eth_getCode`) | ✓ FLOWING (pending live UX verification listed in human_verification) |
 | `Token.json` deployment artifact | contract address | Hardhat deploy script | Yes — real on-chain deployment, tx `0x7d24fa87…` block 10784067 | ✓ FLOWING |
-| Root README "Try it live" Vercel badge | URL | Manual fill post-Vercel-bind | NO yet — placeholder `<VERCEL_URL>` | ⚠️ HOLLOW (intentional — documented user-action path in VERCEL.md) |
+| Root README "Try it live" Vercel badge | URL | Manual fill post-Vercel-bind | NO yet — placeholder `https://zama-skills.vercel.app` | ⚠️ HOLLOW (intentional — documented user-action path in VERCEL.md) |
 
 ### Behavioral Spot-Checks
 
@@ -102,7 +102,7 @@ gaps: []
 
 | File | Line | Pattern | Severity | Impact |
 |---|---|---|---|---|
-| `examples/confidential-token/README.md` | 6, 10 | Placeholder `<VERCEL_URL>` not yet replaced | ℹ️ Info | Intentional; marked `<!-- @sync:vercel-url -->`; resolved on Vercel bind |
+| `examples/confidential-token/README.md` | 6, 10 | Placeholder `https://zama-skills.vercel.app` not yet replaced | ℹ️ Info | Intentional; marked `<!-- @sync:vercel-url -->`; resolved on Vercel bind |
 | `examples/confidential-token/README.md` | 17 | demo.gif placeholder | ℹ️ Info | Deferred to Phase 6 (per ROADMAP DIST-01) |
 
 No blockers, no stubs in implementation code, no deprecated imports detected (smoke-diff cross-checks fhevmjs / fhevm-root bans).
@@ -112,7 +112,7 @@ No blockers, no stubs in implementation code, no deprecated imports detected (sm
 See frontmatter `human_verification` for 3 items:
 
 1. **Etherscan source verification** — DEPLOYED.md transparently documents the skip; user must run `pnpm hardhat verify --network sepolia 0x04Bd…6896 …` after providing `ETHERSCAN_API_KEY`. The skill output and on-chain deployment are correct; only verification metadata on Etherscan is missing.
-2. **Vercel bind + live UX walkthrough** — VERCEL.md is a complete 6-step playbook. After bind, the four `<VERCEL_URL>` placeholders (3 in example README, 1 in root README, all marked `<!-- @sync:vercel-url -->`) should be filled.
+2. **Vercel bind + live UX walkthrough** — VERCEL.md is a complete 6-step playbook. After bind, the four `https://zama-skills.vercel.app` placeholders (3 in example README, 1 in root README, all marked `<!-- @sync:vercel-url -->`) should be filled.
 3. **Confidential Token Registry interpretation** — confirm whether the standalone ERC-7984 path documented in DEPLOYED.md (Wrappers Registry only accepts token+wrapper pairs) is correct, or whether a standalone-token registry endpoint exists.
 
 ### Deferred Items
@@ -129,7 +129,7 @@ There are **no implementation gaps**. All code, scripts, CI, deploy artifacts, a
 - The three "partial" items are **all gated by external user actions** the project intentionally does not automate per its stated policy ("skills scaffold, humans deploy") and resource availability (no Etherscan API key in this run):
   - **EXAMPLE-02 verify:** documented manual `hardhat verify` command in DEPLOYED.md.
   - **EXAMPLE-02 registry:** documented N/A interpretation requiring human protocol confirmation.
-  - **EXAMPLE-03 Vercel:** complete VERCEL.md walkthrough; the four `<VERCEL_URL>` sync markers will be filled when the user binds the repo.
+  - **EXAMPLE-03 Vercel:** complete VERCEL.md walkthrough; the four `https://zama-skills.vercel.app` sync markers will be filled when the user binds the repo.
 
 Status `human_needed` (not `gaps_found`) reflects that the next move is human action, not a code fix. Recommend the orchestrator surface the 3 human-verification items to the user before declaring Phase 5 fully closed, but the artifact-level deliverables are complete and ready to proceed to Phase 6.
 

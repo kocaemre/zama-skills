@@ -71,7 +71,7 @@ README structure (`examples/confidential-token/README.md`):
 [![Verified](badge: green check)](etherscan link) [![Registry](badge)](registry link) [![Vercel](badge)](vercel url)
 
 ## Try it live
-- Frontend: <VERCEL_URL>  (← TODO: fill after Vercel binds repo)
+- Frontend: https://zama-skills.vercel.app  (← TODO: fill after Vercel binds repo)
 - Contract: <SEPOLIA_ADDRESS> on Etherscan
 - Registry: cDEMO entry
 
@@ -136,7 +136,7 @@ Root README addition (DIST-01 partial):
   <name>Task 1: Author examples/confidential-token/README.md + docs/vercel-setup.md + GIF placeholder</name>
   <files>examples/confidential-token/README.md, examples/confidential-token/docs/vercel-setup.md, examples/confidential-token/docs/demo.gif.TODO</files>
   <action>
-1. Generate `examples/confidential-token/README.md` per the structure in `<interfaces>`. Pull live values from `examples/confidential-token/DEPLOYED.md` (Etherscan link, Registry link, address). Put `<VERCEL_URL>` as a literal placeholder string with HTML comment `<!-- @sync:vercel-url -->` so a future build hook can patch it post-bind.
+1. Generate `examples/confidential-token/README.md` per the structure in `<interfaces>`. Pull live values from `examples/confidential-token/DEPLOYED.md` (Etherscan link, Registry link, address). Put `https://zama-skills.vercel.app` as a literal placeholder string with HTML comment `<!-- @sync:vercel-url -->` so a future build hook can patch it post-bind.
 2. Use shields.io badges:
    - `https://img.shields.io/badge/Sepolia-Verified-brightgreen?logo=ethereum`
    - `https://img.shields.io/badge/Registry-Listed-yellow`
@@ -160,13 +160,13 @@ Root README addition (DIST-01 partial):
    ```
    ## Try it live
 
-   [![Vercel](https://img.shields.io/badge/Vercel-Live-black?logo=vercel)](<VERCEL_URL>) [![Sepolia](https://img.shields.io/badge/Sepolia-Verified-brightgreen?logo=ethereum)](<ETHERSCAN_URL>)
+   [![Vercel](https://img.shields.io/badge/Vercel-Live-black?logo=vercel)](https://zama-skills.vercel.app) [![Sepolia](https://img.shields.io/badge/Sepolia-Verified-brightgreen?logo=ethereum)](<ETHERSCAN_URL>)
 
    See [`examples/confidential-token/`](examples/confidential-token/) — a confidential ERC-7984 token deployed to Sepolia and live on Vercel. Built by running this plugin's skills against an empty directory.
 
    ![demo](examples/confidential-token/docs/demo.gif)  <!-- placeholder until Phase 6 records the real GIF -->
    ```
-3. Substitute `<VERCEL_URL>` with the same `<!-- @sync:vercel-url -->` marker; substitute `<ETHERSCAN_URL>` with the actual address from `DEPLOYED.md`.
+3. Substitute `https://zama-skills.vercel.app` with the same `<!-- @sync:vercel-url -->` marker; substitute `<ETHERSCAN_URL>` with the actual address from `DEPLOYED.md`.
 4. Do NOT touch other sections of the root README — DIST-01's full hero is Phase 6's job. This is the partial assist (link + badges).
 5. Commit: `docs(05): root README links to confidential-token live demo`.
   </action>
@@ -186,7 +186,7 @@ Root README addition (DIST-01 partial):
 4. Add the four environment variables from `examples/confidential-token/docs/vercel-setup.md`.
 5. Deploy.
 6. Copy the production URL.
-7. Replace BOTH `<VERCEL_URL>` placeholders (in `examples/confidential-token/README.md` and root `README.md`) with the production URL.
+7. Replace BOTH `https://zama-skills.vercel.app` placeholders (in `examples/confidential-token/README.md` and root `README.md`) with the production URL.
 8. Open the URL, connect MetaMask on Sepolia, click Mint — confirm BalanceCard 4-state UX runs end-to-end.
   </how-to-verify>
   <resume-signal>Reply with the Vercel production URL (or "deferred" if you want to defer Vercel binding to Phase 6 polish — EXAMPLE-03 stays Pending in that case).</resume-signal>

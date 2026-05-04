@@ -3,11 +3,11 @@
 > A confidential ERC-7984 token built end-to-end with the **[zama-skills](https://github.com/zama-ai/zama-skills)** Claude Code plugin.
 > Encrypted balances. Public transfers. Powered by [Zama Protocol's fhEVM](https://docs.zama.org/protocol).
 
-[![Sepolia Verified](https://img.shields.io/badge/Sepolia-Verified-brightgreen?logo=ethereum)](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code) [![Registry](https://img.shields.io/badge/Registry-Standalone%20ERC--7984-yellow)](https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia) [![Vercel](https://img.shields.io/badge/Vercel-Live-black?logo=vercel)](<VERCEL_URL>)
+[![Sepolia Verified](https://img.shields.io/badge/Sepolia-Verified-brightgreen?logo=ethereum)](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code) [![Registry](https://img.shields.io/badge/Registry-Standalone%20ERC--7984-yellow)](https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia) [![Vercel](https://img.shields.io/badge/Vercel-Live-black?logo=vercel)](https://zama-skills.vercel.app)
 
 ## Try it live
 
-- **Frontend:** [`<VERCEL_URL>`](<VERCEL_URL>) <!-- @sync:vercel-url --> *(TODO: fill after Vercel binds the repo — see [`VERCEL.md`](./VERCEL.md))*
+- **Frontend:** [`https://zama-skills.vercel.app`](https://zama-skills.vercel.app) <!-- @sync:vercel-url --> *(TODO: fill after Vercel binds the repo — see [`VERCEL.md`](./VERCEL.md))*
 - **Contract:** [`0x04Bd105DE7a5D3297c3747cef90ac8b760136896`](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code) on Sepolia Etherscan
 - **Deploy tx:** [`0x7d24fa87…6fb3a7`](https://sepolia.etherscan.io/tx/0x7d24fa87ebc0802e208eeee884b9fe67606e91b9fbf34209a01422ae196fb3a7) (block 10784067)
 - **Full deploy artifact:** [`DEPLOYED.md`](./DEPLOYED.md)
