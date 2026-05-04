@@ -96,15 +96,17 @@ describe('installSkills — claude-code (bundle)', () => {
     const it = result.installed[0]!;
     expect(it.target).toBe('claude-code');
     expect(it.written).toBe(10);
+    // Each skill is copied flat with a zama- prefix so Claude Code's auto-discovery
+    // at .claude/skills/<name>/SKILL.md picks them up directly.
     for (const name of [
-      'init', 'contract', 'test', 'deploy', 'frontend',
-      'design', 'audit', 'debug', 'doctor', 'autonomous',
+      'zama-init', 'zama-contract', 'zama-test', 'zama-deploy', 'zama-frontend',
+      'zama-design', 'zama-audit', 'zama-debug', 'zama-doctor', 'zama-autonomous',
     ]) {
       expect(await fileExists(path.join(it.destDir, name, 'SKILL.md'))).toBe(true);
     }
   });
 
-  it('preserves disable-model-invocation in deploy/SKILL.md', async () => {
+  it('preserves disable-model-invocation in zama-deploy/SKILL.md', async () => {
     const result = await installSkills({
       scope: 'project',
       projectRoot: tmp, homeRoot: tmp,
@@ -114,7 +116,7 @@ describe('installSkills — claude-code (bundle)', () => {
       force: true,
     });
     const deploy = await readFile(
-      path.join(result.installed[0]!.destDir, 'deploy', 'SKILL.md'),
+      path.join(result.installed[0]!.destDir, 'zama-deploy', 'SKILL.md'),
       'utf8',
     );
     expect(deploy).toMatch(/disable-model-invocation:\s*true/);
@@ -187,7 +189,7 @@ describe('installSkills — multi-target install', () => {
       force: true,
     });
     expect(result.installed).toHaveLength(3);
-    expect(await fileExists(path.join(tmp, '.claude', 'skills', 'zama-skills', 'init', 'SKILL.md'))).toBe(true);
+    expect(await fileExists(path.join(tmp, '.claude', 'skills', 'zama-init', 'SKILL.md'))).toBe(true);
     expect(await fileExists(path.join(tmp, '.cursor', 'rules', 'zama-skills', 'init.md'))).toBe(true);
     expect(await fileExists(path.join(tmp, '.opencode', 'rules', 'zama-skills', 'init.md'))).toBe(true);
     expect(await fileExists(path.join(tmp, 'AGENTS.md'))).toBe(true);
@@ -227,30 +229,44 @@ describe('install marker + uninstall safety', () => {
     expect(await fileExists(path.join(r.installed[0]!.destDir, '.zama-skills-installed'))).toBe(true);
   });
 
-  it('uninstall refuses to remove a foreign directory (no marker)', async () => {
-    // Create a foreign dir at the path uninstall would target.
-    const foreign = path.join(tmp, '.claude', 'skills', 'zama-skills');
-    await mkdir(foreign, { recursive: true });
-    await writeFile(path.join(foreign, 'user-notes.md'), '# my notes\n', 'utf8');
+  it('uninstall refuses to touch claude-code skills dir without marker', async () => {
+    // Pre-populate .claude/skills/ with a foreign skill folder + a user note.
+    const skillsDir = path.join(tmp, '.claude', 'skills');
+    await mkdir(path.join(skillsDir, 'other-plugin', 'foo'), { recursive: true });
+    await writeFile(path.join(skillsDir, 'other-plugin', 'foo', 'SKILL.md'), 'foreign\n', 'utf8');
+    await writeFile(path.join(skillsDir, 'user-notes.md'), '# my notes\n', 'utf8');
     await expect(
       uninstallSkills({
         projectRoot: tmp, homeRoot: tmp,
         targets: ['claude-code'],
       }),
     ).rejects.toThrow(/not a zama-skills install/);
-    // User's file must still be there.
-    expect(await fileExists(path.join(foreign, 'user-notes.md'))).toBe(true);
+    // Foreign content untouched.
+    expect(await fileExists(path.join(skillsDir, 'other-plugin', 'foo', 'SKILL.md'))).toBe(true);
+    expect(await fileExists(path.join(skillsDir, 'user-notes.md'))).toBe(true);
   });
 
-  it('uninstall removes the dir when marker is present (round trip)', async () => {
+  it('uninstall removes only zama-* skill folders + marker (round trip; foreign skills untouched)', async () => {
+    // Pre-populate a foreign skill folder so we can verify it survives uninstall.
+    const skillsDir = path.join(tmp, '.claude', 'skills');
+    await mkdir(path.join(skillsDir, 'other-plugin'), { recursive: true });
+    await writeFile(path.join(skillsDir, 'other-plugin', 'SKILL.md'), 'foreign\n', 'utf8');
+
     const r = await installSkills({
       scope: 'project', projectRoot: tmp, homeRoot: tmp,
       sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
       targets: ['claude-code'], force: true,
     });
-    expect(await fileExists(r.installed[0]!.destDir)).toBe(true);
+    expect(await fileExists(path.join(r.installed[0]!.destDir, 'zama-init', 'SKILL.md'))).toBe(true);
+    expect(await fileExists(path.join(r.installed[0]!.destDir, '.zama-skills-installed'))).toBe(true);
+
     await uninstallSkills({ projectRoot: tmp, homeRoot: tmp, targets: ['claude-code'] });
-    expect(await fileExists(r.installed[0]!.destDir)).toBe(false);
+
+    // Our skills + marker gone.
+    expect(await fileExists(path.join(r.installed[0]!.destDir, 'zama-init'))).toBe(false);
+    expect(await fileExists(path.join(r.installed[0]!.destDir, '.zama-skills-installed'))).toBe(false);
+    // Foreign skill survives.
+    expect(await fileExists(path.join(skillsDir, 'other-plugin', 'SKILL.md'))).toBe(true);
   });
 });
 

@@ -172,11 +172,22 @@ async function installBundle(target: Target, opts: InstallOptions): Promise<Inst
   let written = 0;
   for (const name of skills) {
     const src = path.join(sourceRoot, name);
-    const dst = path.join(dest, name);
+    // Claude Code auto-discovers skills via flat `.claude/skills/<skill-name>/SKILL.md`,
+    // and each SKILL.md `name:` field already has a `zama-` prefix. Rename the folder
+    // to match so the on-disk layout = the discovery layout. (`zama-design`, etc.)
+    const folder = target.id === 'claude-code' && !name.startsWith('zama-') ? `zama-${name}` : name;
+    const dst = path.join(dest, folder);
     await fs.copy(src, dst, { overwrite: force, errorOnExist: !force, dereference: false, filter: noSymlinkFilter });
     written += 1;
   }
-  await writeFile(path.join(dest, INSTALL_MARKER), `${new Date().toISOString()}\n`, 'utf8');
+  // Marker dropped INSIDE dest so we know which dir is ours. For claude-code (where
+  // dest is shared with other plugins under `.claude/skills/`), the marker file uses
+  // a distinctive name so it cannot collide.
+  const markerPath =
+    target.id === 'claude-code'
+      ? path.join(dest, '.zama-skills-installed')
+      : path.join(dest, INSTALL_MARKER);
+  await writeFile(markerPath, `${new Date().toISOString()}\n`, 'utf8');
   return { target: target.id, destDir: dest, written };
 }
 
@@ -322,16 +333,42 @@ export async function uninstallSkills(opts: UninstallOptions): Promise<Uninstall
     const dest = target.destDir(root);
     let removed = false;
     if (await fs.pathExists(dest)) {
-      // Refuse to nuke a directory we did not install. The marker file is dropped on every install
-      // and is the only safe signal that this dir belongs to us. Without it, abort with a clear error.
-      const markerPath = path.join(dest, INSTALL_MARKER);
-      if (!(await fs.pathExists(markerPath))) {
-        throw new Error(
-          `${dest}: not a zama-skills install (missing ${INSTALL_MARKER}). Refusing to remove a foreign directory. If this dir is genuinely a stale install, delete it manually.`,
-        );
+      if (id === 'claude-code') {
+        // claude-code dest is `.claude/skills/` which is shared with other plugins.
+        // Do NOT remove the parent dir — only our marker file + every `zama-*` subdir.
+        const markerPath = path.join(dest, '.zama-skills-installed');
+        if (!(await fs.pathExists(markerPath))) {
+          throw new Error(
+            `${dest}: not a zama-skills install (missing .zama-skills-installed marker). Refusing to remove. If this is a stale install, delete the zama-* skill folders manually.`,
+          );
+        }
+        const entries = await readdir(dest);
+        for (const name of entries) {
+          if (!name.startsWith('zama-')) continue;
+          const sub = path.join(dest, name);
+          // Only remove if it's a directory containing a SKILL.md (defensive — never nuke
+          // an unrelated zama-* file the user may have authored).
+          // eslint-disable-next-line no-await-in-loop
+          if ((await stat(sub)).isDirectory() && (await fs.pathExists(path.join(sub, 'SKILL.md')))) {
+            // eslint-disable-next-line no-await-in-loop
+            await fs.remove(sub);
+            removed = true;
+          }
+        }
+        await fs.remove(markerPath);
+        removed = true;
+      } else {
+        // For other tools, dest is dedicated (e.g. .cursor/rules/zama-skills/).
+        // Marker-gate then nuke the whole dir.
+        const markerPath = path.join(dest, INSTALL_MARKER);
+        if (!(await fs.pathExists(markerPath))) {
+          throw new Error(
+            `${dest}: not a zama-skills install (missing ${INSTALL_MARKER}). Refusing to remove a foreign directory. If this dir is genuinely a stale install, delete it manually.`,
+          );
+        }
+        await fs.remove(dest);
+        removed = true;
       }
-      await fs.remove(dest);
-      removed = true;
     }
     let entryPointStripped: string | undefined;
     if (target.entryPoint) {
@@ -354,6 +391,13 @@ export async function destinationHasExisting(
     const root = target.supportsGlobalScope && globalTargets?.has(id) ? homeRoot : projectRoot;
     const dest = target.destDir(root);
     if (!(await fs.pathExists(dest))) continue;
+    if (id === 'claude-code') {
+      // Shared dest — only our own footprint should trigger the overwrite prompt.
+      const entries = await readdir(dest);
+      const ours = entries.some((n) => n === '.zama-skills-installed' || n.startsWith('zama-'));
+      if (ours) return true;
+      continue;
+    }
     const entries = await readdir(dest);
     if (entries.length > 0) return true;
   }

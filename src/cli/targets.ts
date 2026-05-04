@@ -78,7 +78,11 @@ export const TARGETS: Target[] = [
     label: 'Claude Code',
     description: 'Native plugin (slash commands, auto-routing, closing-summary chain)',
     assetShape: 'bundle',
-    destDir: (root) => path.join(root, '.claude', 'skills', 'zama-skills'),
+    // Claude Code auto-discovers skills at `.claude/skills/<skill-name>/SKILL.md`
+    // (flat). The bundle installer copies each skill into this dir with a
+    // `zama-` prefix so the folder name matches the SKILL.md `name:` field
+    // and our skills don't collide with anything else under `.claude/skills/`.
+    destDir: (root) => path.join(root, '.claude', 'skills'),
     postInstallHint: (root) =>
       `Open Claude Code in this directory, then type /zama-doctor to verify, /zama-autonomous to run the full pipeline.`,
     detect: async (root) =>
