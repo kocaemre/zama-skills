@@ -85,7 +85,7 @@ describe('installSkills — claude-code (bundle)', () => {
   it('copies all 10 skill folders with SKILL.md preserved', async () => {
     const result = await installSkills({
       scope: 'project',
-      targetRoot: tmp,
+      projectRoot: tmp, homeRoot: tmp,
       sourceRoot: realSourceRoot,
       genericRoot: realGenericRoot,
       targets: ['claude-code'],
@@ -106,7 +106,7 @@ describe('installSkills — claude-code (bundle)', () => {
   it('preserves disable-model-invocation in deploy/SKILL.md', async () => {
     const result = await installSkills({
       scope: 'project',
-      targetRoot: tmp,
+      projectRoot: tmp, homeRoot: tmp,
       sourceRoot: realSourceRoot,
       genericRoot: realGenericRoot,
       targets: ['claude-code'],
@@ -124,7 +124,7 @@ describe('installSkills — cursor (generic)', () => {
   it('drops generic markdown under .cursor/rules/zama-skills/', async () => {
     const result = await installSkills({
       scope: 'project',
-      targetRoot: tmp,
+      projectRoot: tmp, homeRoot: tmp,
       sourceRoot: realSourceRoot,
       genericRoot: realGenericRoot,
       targets: ['cursor'],
@@ -146,7 +146,7 @@ describe('installSkills — opencode (generic + AGENTS.md pointer)', () => {
   it('appends a pointer block to AGENTS.md', async () => {
     const result = await installSkills({
       scope: 'project',
-      targetRoot: tmp,
+      projectRoot: tmp, homeRoot: tmp,
       sourceRoot: realSourceRoot,
       genericRoot: realGenericRoot,
       targets: ['opencode'],
@@ -162,11 +162,11 @@ describe('installSkills — opencode (generic + AGENTS.md pointer)', () => {
 
   it('replaces an existing pointer block instead of duplicating it (idempotent)', async () => {
     await installSkills({
-      scope: 'project', targetRoot: tmp, sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
+      scope: 'project', projectRoot: tmp, homeRoot: tmp, sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
       targets: ['opencode'], force: true,
     });
     await installSkills({
-      scope: 'project', targetRoot: tmp, sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
+      scope: 'project', projectRoot: tmp, homeRoot: tmp, sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
       targets: ['opencode'], force: true,
     });
     const agents = await readFile(path.join(tmp, 'AGENTS.md'), 'utf8');
@@ -179,7 +179,7 @@ describe('installSkills — multi-target install', () => {
   it('installs for cursor + opencode + claude-code in one call', async () => {
     const result = await installSkills({
       scope: 'project',
-      targetRoot: tmp,
+      projectRoot: tmp, homeRoot: tmp,
       sourceRoot: realSourceRoot,
       genericRoot: realGenericRoot,
       targets: ['claude-code', 'cursor', 'opencode'],
@@ -195,15 +195,15 @@ describe('installSkills — multi-target install', () => {
 
 describe('destinationHasExisting', () => {
   it('returns false when nothing installed yet', async () => {
-    expect(await destinationHasExisting(tmp, ['claude-code', 'cursor'])).toBe(false);
+    expect(await destinationHasExisting(tmp, tmp, ['claude-code', 'cursor'])).toBe(false);
   });
 
   it('returns true after installing claude-code', async () => {
     await installSkills({
-      scope: 'project', targetRoot: tmp, sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
+      scope: 'project', projectRoot: tmp, homeRoot: tmp, sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
       targets: ['claude-code'], force: true,
     });
-    expect(await destinationHasExisting(tmp, ['claude-code'])).toBe(true);
+    expect(await destinationHasExisting(tmp, tmp, ['claude-code'])).toBe(true);
   });
 });
 
@@ -211,7 +211,7 @@ describe('installSkills — input validation', () => {
   it('throws when no targets selected', async () => {
     await expect(
       installSkills({
-        scope: 'project', targetRoot: tmp, sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
+        scope: 'project', projectRoot: tmp, homeRoot: tmp, sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
         targets: [], force: true,
       }),
     ).rejects.toThrow(/No install targets/);

@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
-import { installSkills, destinationHasExisting, type InstallScope } from './install.js';
+import { installSkills, uninstallSkills, destinationHasExisting, type InstallScope } from './install.js';
 import { TARGETS, detectTargets, findTarget, type TargetId } from './targets.js';
 
 const program = new Command();
@@ -18,23 +18,27 @@ program
 program
   .command('install')
   .description('Copy zama-skills into one or more AI agent rule directories')
-  .option('--scope <scope>', 'personal | project (project = cwd, personal = $HOME)', 'project')
+  .option('--scope <scope>', 'personal | project — only affects targets that support a global rules dir (claude-code, generic). Default: ask if claude-code is selected, else project.')
   .option(
     '--tool <tool>',
     'comma-separated list: claude-code,cursor,opencode,aider,continue,codex,generic. Skips the interactive picker.',
   )
   .option('--all', 'install for every supported tool (non-interactive)', false)
   .option('--force', 'overwrite existing rules without prompting', false)
-  .action(async (opts: { scope: string; tool?: string; all: boolean; force: boolean }) => {
-    const scope = (opts.scope === 'personal' ? 'personal' : 'project') as InstallScope;
-    const targetRoot = scope === 'project' ? process.cwd() : os.homedir();
+  .action(async (opts: { scope?: string; tool?: string; all: boolean; force: boolean }) => {
+    const scopeFlagProvided = typeof opts.scope === 'string';
+    let scope = (opts.scope === 'personal' ? 'personal' : 'project') as InstallScope;
 
     const here = path.dirname(fileURLToPath(import.meta.url));
     const sourceRoot = path.resolve(here, '..', '..', 'plugins', 'zama-skills', 'skills');
     const genericRoot = path.resolve(here, '..', '..', 'generic');
 
+    const projectRoot = process.cwd();
+    const homeRoot = os.homedir();
+
     // Resolve which targets to install for.
     let targets: TargetId[];
+
     if (opts.all) {
       targets = TARGETS.map((t) => t.id);
     } else if (opts.tool) {
@@ -43,13 +47,12 @@ program
       for (const id of ids) findTarget(id);
       targets = ids;
     } else {
-      // Interactive picker.
-      const detected = await detectTargets(targetRoot);
+      // Interactive picker — detect against cwd (the only place project-local tools care about).
+      const detected = await detectTargets(projectRoot);
       const choices = TARGETS.map((t) => {
         const detectedTag = detected.includes(t.id) ? pc.green(' (detected)') : '';
-        const scopeTag = !t.supportsGlobalScope ? pc.yellow(' (project-local only)') : '';
         return {
-          title: t.label + detectedTag + scopeTag,
+          title: t.label + detectedTag,
           description: t.description,
           value: t.id,
           selected: detected.includes(t.id) || t.id === 'claude-code',
@@ -76,28 +79,52 @@ program
       targets = answer.targets as TargetId[];
     }
 
-    // Warn if --scope personal was chosen for tools that only honor project-local rules.
+    // If Claude Code is among targets and the user did not pass --scope explicitly,
+    // ask whether to install globally (~/.claude) or to this project (.claude).
+    // Skip in non-interactive mode (--tool or --all) — default to project.
+    const interactive = !opts.all && !opts.tool;
+    if (interactive && !scopeFlagProvided && targets.includes('claude-code')) {
+      const scopeAnswer = await prompts({
+        type: 'select',
+        name: 'scope',
+        message: 'Claude Code: install where?',
+        choices: [
+          {
+            title: 'Global  (~/.claude/skills) — available in every project',
+            value: 'personal',
+          },
+          {
+            title: 'Project (./.claude/skills) — only this directory',
+            value: 'project',
+          },
+        ],
+        initial: 0,
+      });
+      if (!scopeAnswer.scope) {
+        console.log(pc.yellow('No scope chosen — aborted.'));
+        process.exit(0);
+      }
+      scope = scopeAnswer.scope as InstallScope;
+    }
+
+    // Build the set of targets that should land under $HOME.
+    // Only targets with supportsGlobalScope=true honor 'personal' scope; everything else stays project-local.
+    const globalTargets = new Set<TargetId>();
     if (scope === 'personal') {
-      const localOnly = targets
+      for (const id of targets) {
+        if (findTarget(id).supportsGlobalScope) globalTargets.add(id);
+      }
+      const projectOnly = targets
         .map((id) => findTarget(id))
         .filter((t) => !t.supportsGlobalScope);
-      if (localOnly.length > 0) {
+      if (projectOnly.length > 0) {
         console.log('');
-        console.log(pc.yellow('⚠ Heads-up:'));
-        for (const t of localOnly) {
-          console.log(
-            `  ${pc.yellow('•')} ${pc.bold(t.label)} reads rules from project (cwd) only — installing under $HOME will likely be ignored by ${t.label}.`,
-          );
-        }
-        console.log(
-          pc.dim(`  Files will still be written, but the tool will not pick them up. Re-run from your project root with default --scope project.`),
-        );
-        console.log('');
+        console.log(pc.dim(`Note: ${projectOnly.map((t) => t.label).join(', ')} only support project-local rules — installing those under cwd.`));
       }
     }
 
     let force = opts.force;
-    if (!force && (await destinationHasExisting(targetRoot, targets))) {
+    if (!force && (await destinationHasExisting(projectRoot, homeRoot, targets, globalTargets))) {
       const answer = await prompts({
         type: 'confirm',
         name: 'ok',
@@ -114,7 +141,9 @@ program
     try {
       const result = await installSkills({
         scope,
-        targetRoot,
+        projectRoot,
+        homeRoot,
+        globalTargets,
         sourceRoot,
         genericRoot,
         targets,
@@ -131,7 +160,8 @@ program
         if (it.entryPointAppended) {
           console.log(`    ${pc.dim('entry:')}   ${it.entryPointAppended} (pointer block appended)`);
         }
-        console.log(`    ${pc.dim('hint:')}    ${t.postInstallHint(targetRoot)}`);
+        const root = t.supportsGlobalScope && globalTargets.has(t.id) ? homeRoot : projectRoot;
+        console.log(`    ${pc.dim('hint:')}    ${t.postInstallHint(root)}`);
         console.log('');
       }
       console.log(pc.bold('Pipeline order:'));
@@ -140,6 +170,148 @@ program
       console.log(pc.dim('Catalogue: https://github.com/kocaemre/zama-skills#what-you-get'));
     } catch (err) {
       console.error(pc.red('install failed:'), (err as Error).message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('uninstall')
+  .description('Remove zama-skills from one or more AI agent rule directories')
+  .option('--scope <scope>', 'personal | project — which copy to remove for global-capable targets (claude-code, generic). Default: ask if claude-code is selected, else project.')
+  .option(
+    '--tool <tool>',
+    'comma-separated list: claude-code,cursor,opencode,aider,continue,codex,generic. Skips the interactive picker.',
+  )
+  .option('--all', 'uninstall from every supported tool (non-interactive)', false)
+  .option('--force', 'skip the confirmation prompt', false)
+  .action(async (opts: { scope?: string; tool?: string; all: boolean; force: boolean }) => {
+    const scopeFlagProvided = typeof opts.scope === 'string';
+    let scope = (opts.scope === 'personal' ? 'personal' : 'project') as InstallScope;
+
+    const projectRoot = process.cwd();
+    const homeRoot = os.homedir();
+
+    // Build a list of "where do we already see zama-skills installed?" — used to pre-select
+    // the picker AND to reject obviously-empty uninstall calls.
+    async function detectInstalled(root: string): Promise<TargetId[]> {
+      const found: TargetId[] = [];
+      for (const t of TARGETS) {
+        const dest = t.destDir(root);
+        // eslint-disable-next-line no-await-in-loop
+        if (await (await import('fs-extra')).default.pathExists(dest)) found.push(t.id);
+      }
+      return found;
+    }
+
+    let targets: TargetId[];
+    if (opts.all) {
+      targets = TARGETS.map((t) => t.id);
+    } else if (opts.tool) {
+      const ids = opts.tool.split(',').map((s) => s.trim()).filter(Boolean) as TargetId[];
+      for (const id of ids) findTarget(id);
+      targets = ids;
+    } else {
+      const projectInstalled = await detectInstalled(projectRoot);
+      const homeInstalled = await detectInstalled(homeRoot);
+      const seen = new Set<TargetId>([...projectInstalled, ...homeInstalled]);
+      const choices = TARGETS.map((t) => {
+        const tag = seen.has(t.id) ? pc.green(' (installed)') : '';
+        return {
+          title: t.label + tag,
+          description: t.description,
+          value: t.id,
+          selected: seen.has(t.id),
+        };
+      });
+      console.log('');
+      console.log(pc.bold(pc.cyan('zama-skills uninstaller')));
+      console.log(pc.dim('Select the AI tools to remove the rules from. Detected installs are pre-selected.'));
+      console.log('');
+      const answer = await prompts({
+        type: 'multiselect',
+        name: 'targets',
+        message: 'Uninstall from:',
+        choices,
+        instructions: false,
+        hint: 'space to toggle · enter to confirm',
+        min: 1,
+      });
+      if (!answer.targets || answer.targets.length === 0) {
+        console.log(pc.yellow('No targets selected — nothing removed.'));
+        process.exit(0);
+      }
+      targets = answer.targets as TargetId[];
+    }
+
+    const interactiveU = !opts.all && !opts.tool;
+    if (interactiveU && !scopeFlagProvided && targets.includes('claude-code')) {
+      const scopeAnswer = await prompts({
+        type: 'select',
+        name: 'scope',
+        message: 'Claude Code: remove which install?',
+        choices: [
+          { title: 'Global  (~/.claude/skills/zama-skills)', value: 'personal' },
+          { title: 'Project (./.claude/skills/zama-skills)', value: 'project' },
+        ],
+        initial: 0,
+      });
+      if (!scopeAnswer.scope) {
+        console.log(pc.yellow('No scope chosen — aborted.'));
+        process.exit(0);
+      }
+      scope = scopeAnswer.scope as InstallScope;
+    }
+
+    const globalTargets = new Set<TargetId>();
+    if (scope === 'personal') {
+      for (const id of targets) {
+        if (findTarget(id).supportsGlobalScope) globalTargets.add(id);
+      }
+    }
+
+    // Show what will be removed and confirm.
+    console.log('');
+    console.log(pc.bold('The following will be removed:'));
+    for (const id of targets) {
+      const t = findTarget(id);
+      const root = t.supportsGlobalScope && globalTargets.has(id) ? homeRoot : projectRoot;
+      console.log(`  ${pc.cyan(t.label)} → ${pc.dim(t.destDir(root))}`);
+      if (t.entryPoint) {
+        console.log(`    ${pc.dim('+ pointer block in:')} ${pc.dim(t.entryPoint(root))}`);
+      }
+    }
+    console.log('');
+
+    if (!opts.force) {
+      const ok = await prompts({
+        type: 'confirm',
+        name: 'ok',
+        message: 'Proceed with removal?',
+        initial: false,
+      });
+      if (!ok.ok) {
+        console.log(pc.yellow('Aborted — nothing removed.'));
+        process.exit(0);
+      }
+    }
+
+    try {
+      const result = await uninstallSkills({ projectRoot, homeRoot, globalTargets, targets });
+      console.log('');
+      console.log(pc.bold(pc.green(`✓ zama-skills uninstalled for ${result.uninstalled.length} target(s)`)));
+      console.log('');
+      for (const it of result.uninstalled) {
+        const t = findTarget(it.target);
+        const status = it.removed ? pc.green('removed') : pc.yellow('not found');
+        console.log(`  ${pc.bold(pc.cyan(t.label))}  [${status}]`);
+        console.log(`    ${pc.dim('dest:')}    ${it.destDir}`);
+        if (it.entryPointStripped) {
+          console.log(`    ${pc.dim('entry:')}   ${it.entryPointStripped} (pointer block stripped)`);
+        }
+        console.log('');
+      }
+    } catch (err) {
+      console.error(pc.red('uninstall failed:'), (err as Error).message);
       process.exit(1);
     }
   });

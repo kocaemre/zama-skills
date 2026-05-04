@@ -8,8 +8,16 @@ export type InstallScope = 'personal' | 'project';
 
 export interface InstallOptions {
   scope: InstallScope;
-  /** Root directory under which the per-target dir will be created. */
-  targetRoot: string;
+  /** Project root (cwd) — used for project-local installs. */
+  projectRoot: string;
+  /** Home root ($HOME) — used when a target is installed globally. */
+  homeRoot: string;
+  /**
+   * Which targets should be installed under $HOME instead of cwd.
+   * Only meaningful for targets that have `supportsGlobalScope: true`
+   * (claude-code, generic). Others always install under projectRoot.
+   */
+  globalTargets?: Set<TargetId>;
   /** Source dir containing `<skill>/SKILL.md` subfolders (Claude Code bundle). */
   sourceRoot: string;
   /** Source dir containing `<skill>.md` generic markdown rules. */
@@ -18,6 +26,13 @@ export interface InstallOptions {
   targets: TargetId[];
   /** When true, overwrite existing files at the destination without prompting. */
   force?: boolean;
+}
+
+function rootFor(target: Target, opts: InstallOptions): string {
+  if (target.supportsGlobalScope && opts.globalTargets?.has(target.id)) {
+    return opts.homeRoot;
+  }
+  return opts.projectRoot;
 }
 
 export interface InstalledTarget {
@@ -114,7 +129,8 @@ async function appendEntryPointer(filePath: string, rulesRelative: string): Prom
 }
 
 async function installBundle(target: Target, opts: InstallOptions): Promise<InstalledTarget> {
-  const { sourceRoot, targetRoot, force = false } = opts;
+  const { sourceRoot, force = false } = opts;
+  const targetRoot = rootFor(target, opts);
   const skills = await findSkillDirs(sourceRoot);
   if (skills.length === 0) {
     throw new Error(`No skills found in sourceRoot: ${sourceRoot}`);
@@ -132,7 +148,8 @@ async function installBundle(target: Target, opts: InstallOptions): Promise<Inst
 }
 
 async function installGeneric(target: Target, opts: InstallOptions): Promise<InstalledTarget> {
-  const { genericRoot, targetRoot, force = false } = opts;
+  const { genericRoot, force = false } = opts;
+  const targetRoot = rootFor(target, opts);
   const docs = await findGenericDocs(genericRoot);
   if (docs.length === 0) {
     throw new Error(`No generic docs found at ${genericRoot}.`);
@@ -216,10 +233,75 @@ export async function installSkills(opts: InstallOptions): Promise<InstallResult
   return { scope: opts.scope, installed };
 }
 
-export async function destinationHasExisting(targetRoot: string, targetIds: TargetId[]): Promise<boolean> {
+export interface UninstallOptions {
+  projectRoot: string;
+  homeRoot: string;
+  globalTargets?: Set<TargetId>;
+  targets: TargetId[];
+}
+
+export interface UninstalledTarget {
+  target: TargetId;
+  destDir: string;
+  removed: boolean;
+  entryPointStripped?: string;
+}
+
+export interface UninstallResult {
+  uninstalled: UninstalledTarget[];
+}
+
+/** Strip the zama-skills pointer block from an entry point file, leaving the rest intact. */
+async function stripEntryPointer(filePath: string): Promise<boolean> {
+  if (!(await fs.pathExists(filePath))) return false;
+  const existing = await readFile(filePath, 'utf8');
+  const beginIdx = existing.indexOf(ENTRY_BLOCK_BEGIN);
+  const endIdx = existing.indexOf(ENTRY_BLOCK_END);
+  if (beginIdx < 0 || endIdx <= beginIdx) return false;
+  const before = existing.slice(0, beginIdx).replace(/\n+$/, '');
+  const after = existing.slice(endIdx + ENTRY_BLOCK_END.length).replace(/^\n+/, '');
+  // If the file becomes nothing-but-our-scaffold ("# AI agent rules"), drop it entirely.
+  const stripped = (before + (before && after ? '\n\n' : '') + after).trim();
+  if (stripped === '' || stripped === '# AI agent rules') {
+    await fs.remove(filePath);
+  } else {
+    await writeFile(filePath, stripped + '\n', 'utf8');
+  }
+  return true;
+}
+
+export async function uninstallSkills(opts: UninstallOptions): Promise<UninstallResult> {
+  if (opts.targets.length === 0) throw new Error('No uninstall targets selected.');
+  const out: UninstalledTarget[] = [];
+  for (const id of opts.targets) {
+    const target = findTarget(id);
+    const root = target.supportsGlobalScope && opts.globalTargets?.has(id) ? opts.homeRoot : opts.projectRoot;
+    const dest = target.destDir(root);
+    let removed = false;
+    if (await fs.pathExists(dest)) {
+      await fs.remove(dest);
+      removed = true;
+    }
+    let entryPointStripped: string | undefined;
+    if (target.entryPoint) {
+      const ep = target.entryPoint(root);
+      if (await stripEntryPointer(ep)) entryPointStripped = ep;
+    }
+    out.push({ target: id, destDir: dest, removed, entryPointStripped });
+  }
+  return { uninstalled: out };
+}
+
+export async function destinationHasExisting(
+  projectRoot: string,
+  homeRoot: string,
+  targetIds: TargetId[],
+  globalTargets?: Set<TargetId>,
+): Promise<boolean> {
   for (const id of targetIds) {
     const target = findTarget(id);
-    const dest = target.destDir(targetRoot);
+    const root = target.supportsGlobalScope && globalTargets?.has(id) ? homeRoot : projectRoot;
+    const dest = target.destDir(root);
     if (!(await fs.pathExists(dest))) continue;
     const entries = await readdir(dest);
     if (entries.length > 0) return true;
