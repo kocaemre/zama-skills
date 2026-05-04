@@ -74,7 +74,10 @@ export function BalanceCard() {
     return handleData;
   }, [handleData]);
 
-  const { status, value, error, request } = useDecrypted<bigint>(handle);
+  const { status, value, error, request } = useDecrypted<bigint>({
+    handle,
+    contractAddress: TOKEN_ADDRESS,
+  });
 
   // When the handle changes (e.g. after a refetch following a tx confirm),
   // re-arm the decryption machine so the user can request a fresh decrypt.
