@@ -1,6 +1,6 @@
 {
   "name": "zama-skills",
-  "version": "0.0.0-dev",
+  "version": "0.1.0",
   "description": "AI agent skills for building confidential dApps with the Zama Protocol (fhEVM) — Claude Code plugin + npx fallback",
   "type": "module",
   "private": false,
@@ -9,10 +9,13 @@
     "name": "Emre Koca",
     "email": "emrekoca2003@gmail.com"
   },
-  "homepage": "https://github.com/<owner>/zama-skills",
+  "homepage": "https://github.com/kocaemre/zama-skills#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/<owner>/zama-skills.git"
+    "url": "git+https://github.com/kocaemre/zama-skills.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kocaemre/zama-skills/issues"
   },
   "keywords": [
     "zama",
@@ -22,19 +25,23 @@
     "ethereum",
     "solidity",
     "claude-code",
-    "ai-skills"
+    "claude-skills",
+    "ai-skills",
+    "ai-agent"
   ],
   "bin": {
     "zama-skills": "./bin/zama-skills.mjs"
   },
   "files": [
-    "bin",
-    "src",
-    "scripts",
+    "bin/zama-skills.mjs",
+    "src/cli",
+    "scripts/generate-generic-docs.mjs",
     "plugins",
     ".claude-plugin",
+    "generic",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_LICENSES.md"
   ],
   "engines": {
     "node": ">=20"
@@ -48,7 +55,8 @@
     "test": "vitest run --passWithNoTests",
     "test:smoke": "ZAMA_INIT_SMOKE=1 vitest run tests/integration --passWithNoTests",
     "typecheck": "tsc --noEmit",
-    "cli": "tsx src/cli/index.ts"
+    "cli": "tsx src/cli/index.ts",
+    "prepublishOnly": "npm run validate && npm test && npm run generic:check"
   },
   "dependencies": {
     "commander": "^12.1.0",
