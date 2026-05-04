@@ -64,6 +64,40 @@ context7 is hard-required. Every Zama / OpenZeppelin / fhEVM API the skill emits
 Run `/zama-doctor` — it lists every required and recommended MCP/tool with install commands and a status check.
 <!-- @endsync -->
 
+<!-- @sync:prompt:ask-user-question-style -->
+# AskUserQuestion phrasing rules
+
+Apply these rules to **every** `AskUserQuestion` invocation in any skill, in any language the user is conversing in.
+
+## Question text
+
+- **Always** start the question with a Capital Letter, even after translation. If the session is in Turkish/French/etc., translate the question naturally but preserve the leading capital.
+- Always end the question with `?`.
+- Keep the question short — one line is ideal, never more than two.
+- Phrase as a real question, not a directive ("Pick a stack" → "Which stack do you want?").
+
+## Options
+
+- Each option label starts with a Capital Letter (or matches the existing kebab-case identifier — `confidential-token` is fine, `Confidential-token` is wrong).
+- Add a one-line "what this means" after every option. If you can't describe it in one line, drop the option.
+- Mark the most common pick with a trailing **`(recommended)`** tag (or, when context-specific, **`(recommended for first-timers)`** / **`(default)`**). Saves the user from research.
+- Never have more than 6 options on a single-select. Group / collapse if you do.
+
+## Free-form text input
+
+- Same capitalization rule on the prompt text.
+- Give a one-line example after the prompt: e.g. `"Pick a kebab-case slug for the project."` → followed by `(e.g., private-payroll)`.
+
+## Bad / good examples
+
+| Bad | Good |
+|---|---|
+| `what category?` | `Which category fits your idea best?` |
+| `confidential-token: tokens` | `confidential-token` — value transfer with hidden balances. **(recommended for first-timers)** |
+| `give me the slug` | `Pick a kebab-case slug for the project.` *(e.g., `private-payroll`)* |
+| (no description on an option) | every option has a one-liner, no exceptions |
+<!-- @endsync -->
+
 ## Documentation Authority
 
 <!-- @sync:shared:context7-query -->
@@ -124,9 +158,33 @@ The skill is **exploratory**, not generative — it stops at the markdown bluepr
 
 ## Step 1 — Elicit the idea (AskUserQuestion)
 
-Use `AskUserQuestion` with three single-select questions. Each option ships a one-line "what this means" so the user picks without docs lookup.
+The flow is **idea-first, taxonomy-second**. The user describes their dApp in plain English (or their session language); you read what they said and pre-select the best match in each follow-up question. The user just hits ENTER if you guessed right.
 
-1. **"What category fits your idea best?"**
+### 1.1 Free-form description (open question, no options)
+
+`AskUserQuestion` with a single free-form input field:
+
+> **"In one sentence, what does the dApp do?"**
+> *(e.g., "Private payroll for a 50-person remote team.", "Sealed-bid art auction.", "Anonymous DAO voting on Sepolia.")*
+
+Capture as `<one_liner>`. If the user's answer is < ~5 words or too vague to reason about, ask one clarifying free-form follow-up: **"What is the most important thing that should stay encrypted?"** — fold that hint into `<one_liner>` and continue.
+
+### 1.2 Auto-classify, then confirm with categorical questions
+
+Read `<one_liner>` and pick the **most likely** answer for each follow-up question. Mark that pick with a trailing **`(recommended — your idea suggests this)`**. The user just hits ENTER if you guessed right.
+
+Heuristic mapping (apply BEFORE rendering questions):
+
+- contains "token", "balance", "transfer", "payroll", "salary", "stipend" → category=`confidential-token`, confidential=`amounts`, decryption=`each-user-sees-own`
+- contains "vote", "ballot", "election", "DAO", "governance" → category=`voting`, confidential=`amounts` (or `outcome-until-reveal` if the user emphasised "result" / "tally"), decryption=`public-after-trigger`
+- contains "auction", "bid", "sealed-bid" → category=`auction`, confidential=`amounts`, decryption=`public-after-trigger`
+- contains "prediction", "settle", "oracle", "outcome" → category=`prediction-market`, confidential=`amounts`, decryption=`oracle-callback`
+- contains "anonymous", "identity", "membership", "private member" → confidential=`identities` (override default for the second question)
+- otherwise → category=`custom`, confidential=`amounts`, decryption=`each-user-sees-own`
+
+Then ask, in order:
+
+1. **"Which category fits your idea best?"** — pre-select the heuristic match with `(recommended — your idea suggests this)`. Options:
    - `confidential-token` — value transfer with hidden balances/amounts (ERC-7984).
    - `voting` — confidential ballots, public tally (VotesConfidential).
    - `auction` — sealed-bid, encrypted-comparison winner selection (custom euint64 + FHE.le).
@@ -134,19 +192,27 @@ Use `AskUserQuestion` with three single-select questions. Each option ships a on
    - `prediction-market` — encrypted positions, oracle-driven settlement (custom + requestDecryption).
    - `custom` — none of the above; design from primitives.
 
-2. **"What is confidential — i.e., MUST stay encrypted on-chain?"**
+2. **"What must stay encrypted on-chain?"** — pre-select the heuristic match with `(recommended)`. Options:
    - `amounts` — balance / bid / vote weight values.
    - `identities` — who participated (encrypted address mapping).
    - `outcome-until-reveal` — result is encrypted during the active phase, public after a trigger.
    - `metadata` — auxiliary data (preferences, rankings, choices) but addresses are public.
 
-3. **"Who decrypts what?"**
+3. **"Who decrypts what?"** — pre-select the heuristic match with `(recommended)`. Options:
    - `each-user-sees-own` — user-side decryption via `FHE.allow(handle, msg.sender)`.
    - `public-after-trigger` — public decryption via `FHE.makePubliclyDecryptable(handle)` (e.g., final tally).
    - `oracle-callback` — off-chain relayer posts plaintext via `FHE.requestDecryption` (e.g., settlement).
    - `mixed` — combination; the skill will document each data slot's path separately.
 
-Capture answers as `<category>`, `<confidential>`, `<decryption>`. Then ask for a free-form `<one_liner>` describing the dApp ("private payroll for a 50-person remote team") and a kebab-case `<slug>` ("private-payroll").
+Capture as `<category>`, `<confidential>`, `<decryption>`.
+
+### 1.3 Slug
+
+Auto-derive a kebab-case slug from `<one_liner>` (lowercase, drop stop-words like *the/a/for/of/on*, hyphenate). Show via `AskUserQuestion` confirm prompt:
+
+> **"Use slug `<auto-derived-slug>` for the project? (Edit if you want a shorter name.)"**
+
+Free-form input pre-populated with the suggestion. Capture as `<slug>`.
 
 ## Step 2 — Ground decisions in context7 (live)
 
