@@ -21,7 +21,7 @@ program
   .option('--scope <scope>', 'personal | project — only affects targets that support a global rules dir (claude-code, generic). Default: ask if claude-code is selected, else project.')
   .option(
     '--tool <tool>',
-    'comma-separated list: claude-code,cursor,opencode,aider,continue,codex,generic. Skips the interactive picker.',
+    'comma-separated list: claude-code,cursor,windsurf,opencode,aider,continue,codex,generic. Skips the interactive picker.',
   )
   .option('--all', 'install for every supported tool (non-interactive)', false)
   .option('--force', 'overwrite existing rules without prompting', false)
@@ -188,7 +188,7 @@ program
   .option('--scope <scope>', 'personal | project — which copy to remove for global-capable targets (claude-code, generic). Default: ask if claude-code is selected, else project.')
   .option(
     '--tool <tool>',
-    'comma-separated list: claude-code,cursor,opencode,aider,continue,codex,generic. Skips the interactive picker.',
+    'comma-separated list: claude-code,cursor,windsurf,opencode,aider,continue,codex,generic. Skips the interactive picker.',
   )
   .option('--all', 'uninstall from every supported tool (non-interactive)', false)
   .option('--force', 'skip the confirmation prompt', false)

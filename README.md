@@ -21,7 +21,9 @@ After install, verify with **`/zama-doctor`** — it checks every requirement an
 
 ## Install — pick your AI tool
 
-Click the section that matches your editor / agent. Claude Code gets the richest experience (slash commands + auto-routing); every other tool gets the same skill content as portable markdown rules.
+> **Best experience: Claude Code.** This pack was designed around Claude Code's slash commands, skill auto-routing, and inter-skill chaining (`/zama-design` → `/zama-init` → `/zama-contract` → `/zama-test` → `/zama-audit` → `/zama-deploy`). The other tools get the same underlying skill content as portable markdown rules — useful, but you orchestrate the chain yourself instead of one slash command kicking off the next.
+
+Click the section that matches your editor / agent.
 
 > Don't see your tool? Pick **Generic** at the bottom — it drops a self-contained `zama-skills-knowledge/` folder you can hand-point any AI agent at.
 
@@ -112,6 +114,8 @@ npx zama-skills@latest install --tool windsurf --force
 ```
 
 Drops the rule pack at `.windsurf/rules/zama-skills/`. Windsurf's Cascade agent reads it as project context — no restart needed in most setups.
+
+> ⚠️ **Windsurf has a 12,000-character limit per rule file** ([source](https://docs.windsurf.com/windsurf/cascade/memories)). 8 of our 10 skill files exceed it, so Cascade will silently truncate the long ones. **Recommended:** also install `--tool generic` and tell Cascade *"for full rules, see `zama-skills-knowledge/<skill>.md`"* — Windsurf's rule files then act as the index, and the full content lives outside the 12K-capped folder.
 
 ### How to use
 
