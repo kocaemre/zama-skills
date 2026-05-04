@@ -1,6 +1,6 @@
 {
   "name": "zama-skills",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "AI agent skills for building confidential dApps with the Zama Protocol (fhEVM) — Claude Code plugin + npx fallback",
   "type": "module",
   "private": false,
