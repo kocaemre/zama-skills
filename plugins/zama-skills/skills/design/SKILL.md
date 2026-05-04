@@ -75,13 +75,15 @@ Apply these rules to **every** `AskUserQuestion` invocation in any skill, in any
 - Always end the question with `?`.
 - Keep the question short — one line is ideal, never more than two.
 - Phrase as a real question, not a directive ("Pick a stack" → "Which stack do you want?").
+- **Adapt the question to what the user already said.** If a previous answer (or a free-form description like `<one_liner>`) is in scope, splice a 1-3-word reference from it into the next question. Generic "Which stack do you want?" becomes "Which stack do you want for **your private payroll dApp**?". This makes the conversation feel like the skill listened, not like a fixed survey.
 
 ## Options
 
 - Each option label starts with a Capital Letter (or matches the existing kebab-case identifier — `confidential-token` is fine, `Confidential-token` is wrong).
 - Add a one-line "what this means" after every option. If you can't describe it in one line, drop the option.
-- Mark the most common pick with a trailing **`(recommended)`** tag (or, when context-specific, **`(recommended for first-timers)`** / **`(default)`**). Saves the user from research.
-- Never have more than 6 options on a single-select. Group / collapse if you do.
+- Mark the most common pick with a trailing **`(recommended)`** tag (or, when context-specific, **`(recommended — your idea suggests this)`** / **`(default)`**). Saves the user from research.
+- **Filter options by what the user already said.** If they described a payroll dApp, don't show `auction` and `prediction-market` as options — drop them. Keep ≤5 options per question. Always keep at least: the heuristic match, the next two most likely alternatives, and a fallback (`custom` / `other`).
+- Never have more than 6 options on a single-select.
 
 ## Free-form text input
 
@@ -169,42 +171,61 @@ The flow is **idea-first, taxonomy-second**. The user describes their dApp in pl
 
 Capture as `<one_liner>`. If the user's answer is < ~5 words or too vague to reason about, ask one clarifying free-form follow-up: **"What is the most important thing that should stay encrypted?"** — fold that hint into `<one_liner>` and continue.
 
-### 1.2 Auto-classify, then confirm with categorical questions
+### 1.2 Auto-classify, then confirm with **adaptive** categorical questions
 
-Read `<one_liner>` and pick the **most likely** answer for each follow-up question. Mark that pick with a trailing **`(recommended — your idea suggests this)`**. The user just hits ENTER if you guessed right.
+Read `<one_liner>` and run two passes BEFORE rendering any question:
 
-Heuristic mapping (apply BEFORE rendering questions):
+**Pass A — heuristic classification.** Pick the most likely answer for each of the three follow-up questions:
 
 - contains "token", "balance", "transfer", "payroll", "salary", "stipend" → category=`confidential-token`, confidential=`amounts`, decryption=`each-user-sees-own`
 - contains "vote", "ballot", "election", "DAO", "governance" → category=`voting`, confidential=`amounts` (or `outcome-until-reveal` if the user emphasised "result" / "tally"), decryption=`public-after-trigger`
 - contains "auction", "bid", "sealed-bid" → category=`auction`, confidential=`amounts`, decryption=`public-after-trigger`
 - contains "prediction", "settle", "oracle", "outcome" → category=`prediction-market`, confidential=`amounts`, decryption=`oracle-callback`
-- contains "anonymous", "identity", "membership", "private member" → confidential=`identities` (override default for the second question)
+- contains "anonymous", "identity", "membership", "private member" → confidential=`identities` (overrides the default)
 - otherwise → category=`custom`, confidential=`amounts`, decryption=`each-user-sees-own`
 
-Then ask, in order:
+**Pass B — rewrite the questions to reference the user's idea.** Don't ask generic questions; ground each one in `<one_liner>` so the user feels the skill listened. Also drop options that are clearly irrelevant (rule of thumb: keep ≤5, always include the heuristic match + `custom` as a safety valve).
 
-1. **"Which category fits your idea best?"** — pre-select the heuristic match with `(recommended — your idea suggests this)`. Options:
-   - `confidential-token` — value transfer with hidden balances/amounts (ERC-7984).
-   - `voting` — confidential ballots, public tally (VotesConfidential).
-   - `auction` — sealed-bid, encrypted-comparison winner selection (custom euint64 + FHE.le).
-   - `payroll` — recurring confidential transfers between known parties (ERC-7984 + scheduling).
-   - `prediction-market` — encrypted positions, oracle-driven settlement (custom + requestDecryption).
-   - `custom` — none of the above; design from primitives.
+The next three `AskUserQuestion`s follow this **rewriting recipe**:
 
-2. **"What must stay encrypted on-chain?"** — pre-select the heuristic match with `(recommended)`. Options:
-   - `amounts` — balance / bid / vote weight values.
-   - `identities` — who participated (encrypted address mapping).
-   - `outcome-until-reveal` — result is encrypted during the active phase, public after a trigger.
-   - `metadata` — auxiliary data (preferences, rankings, choices) but addresses are public.
+1. **Question text** — start from a base template, splice in a 1-3-word reference to what the user said. Examples (`<idea>` = a short label you derive from `<one_liner>`):
+   - Generic: "Which category fits your idea best?"
+   - Rewritten: "Which category fits your **`<idea>`**?"
+     - `<one_liner>` "Anonymous DAO voting" → "Which category fits your **anonymous DAO voting** dApp?"
+     - `<one_liner>` "Sealed-bid art auction" → "Which category fits your **sealed-bid auction**?"
+   - Generic: "What must stay encrypted on-chain?"
+   - Rewritten: "In **`<idea>`**, what must stay encrypted on-chain?"
+   - Generic: "Who decrypts what?"
+   - Rewritten: "Who should be able to decrypt the encrypted state in **`<idea>`**?"
 
-3. **"Who decrypts what?"** — pre-select the heuristic match with `(recommended)`. Options:
-   - `each-user-sees-own` — user-side decryption via `FHE.allow(handle, msg.sender)`.
-   - `public-after-trigger` — public decryption via `FHE.makePubliclyDecryptable(handle)` (e.g., final tally).
-   - `oracle-callback` — off-chain relayer posts plaintext via `FHE.requestDecryption` (e.g., settlement).
-   - `mixed` — combination; the skill will document each data slot's path separately.
+2. **Pre-selected option** — mark the Pass-A heuristic match with `(recommended — your idea suggests this)`.
 
-Capture as `<category>`, `<confidential>`, `<decryption>`.
+3. **Option filter** — drop options that are clearly wrong for `<idea>`. Keep at minimum: the heuristic match, the next two most likely alternatives, and `custom` (as fallback). Examples:
+   - `<one_liner>` "Anonymous DAO voting" → drop `confidential-token`, `auction`, `payroll` (none make sense for voting). Keep `voting` (recommended), `prediction-market`, `custom`.
+   - `<one_liner>` "Private payroll" → drop `voting`, `auction`, `prediction-market`. Keep `payroll` (recommended), `confidential-token`, `custom`.
+
+4. **Description tweak** — when the option name is long-form (e.g., `confidential-token`), keep the canonical kebab-case identifier visible (downstream skills consume it), but tighten the one-liner so it reflects the user's idea. Example:
+   - Generic: "`confidential-token` — value transfer with hidden balances/amounts (ERC-7984)."
+   - For payroll context: "`confidential-token` — alternative if you want plain ERC-7984 instead of payroll-flavored scheduling."
+
+Capture answers as `<category>`, `<confidential>`, `<decryption>`. Whatever the user picks (recommended or not) is the truth — pass through.
+
+#### Full base option catalog (filter from this set)
+
+- `confidential-token` — value transfer with hidden balances/amounts (ERC-7984).
+- `voting` — confidential ballots, public tally (VotesConfidential).
+- `auction` — sealed-bid, encrypted-comparison winner selection (custom euint64 + FHE.le).
+- `payroll` — recurring confidential transfers between known parties (ERC-7984 + scheduling).
+- `prediction-market` — encrypted positions, oracle-driven settlement (custom + requestDecryption).
+- `custom` — none of the above; design from primitives.
+- `amounts` — balance / bid / vote weight values.
+- `identities` — who participated (encrypted address mapping).
+- `outcome-until-reveal` — result is encrypted during the active phase, public after a trigger.
+- `metadata` — auxiliary data (preferences, rankings, choices) but addresses are public.
+- `each-user-sees-own` — user-side decryption via `FHE.allow(handle, msg.sender)`.
+- `public-after-trigger` — public decryption via `FHE.makePubliclyDecryptable(handle)` (e.g., final tally).
+- `oracle-callback` — off-chain relayer posts plaintext via `FHE.requestDecryption` (e.g., settlement).
+- `mixed` — combination; the skill documents each data slot's path separately.
 
 ### 1.3 Slug
 
