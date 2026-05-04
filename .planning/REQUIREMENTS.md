@@ -79,12 +79,15 @@
 - [ ] **DIST-06**: Clean-VM end-to-end test — sıfırdan kurulum → ilk dApp deploy çalıştı (deadline'dan ≥24 saat önce)
 - [ ] **DIST-07**: Submission ≥24 saat erken (deadline 2026-05-10 23:59 AOE; hedef 2026-05-09)
 
+## v1.1 Requirements (shipped post-bounty)
+
+### Design / Audit / Debug Skills
+
+- [x] **DESIGN-01**: `/zama-design` — fikrini anlat → context7-grounded `DESIGN.md` (contract architecture + ACL strategy) + `UI-WIREFRAME.md` (component tree + 4-state UX flows)
+- [x] **AUDIT-01**: `/zama-audit` — FHE-aware code review (ACL gaps, cleartext leaks, HCU explosions >12 ops/fn, deprecated imports). Exits 0/1/2 for CI.
+- [x] **DEBUG-01**: `/zama-debug` — error pattern matcher (10+ catalog: ACL revert, initSDK undefined, deprecated imports, HCU exceeded, SSR indexedDB, etc.) → root cause + fix command
+
 ## v2 Requirements
-
-### Audit & Debug Skills
-
-- **AUDIT-01**: `/zama-audit` — FHE-aware code review (decrypt yanlış yer, ACL atlama, plaintext leak, HCU patlamaları)
-- **DEBUG-01**: `/zama-debug` — yaygın FHE hatalarını teşhis (allowThis unutma, mock-only test, deprecated import, vs.)
 
 ### Quality of Life
 
@@ -97,8 +100,8 @@
 | Feature | Reason |
 |---------|--------|
 | Custom MCP server | Context7'de `/zama-ai/fhevm` (1772 snippet, High rep), `/zama-ai/fhevm-hardhat-template`, `/websites/openzeppelin_confidential-contracts` zaten var; reinvent değer katmaz |
-| `/zama-audit` (FHE-aware review) | 7 günde "exceptional" kalitede review skill'i yapmak orta seviye FHE deneyimiyle risk; ana scope'u zayıflatır → v2 |
-| `/zama-debug` (FHE hata teşhisi) | Aynı sebep — v2 |
+| ~~`/zama-audit`~~ — moved to v1.1 (shipped) | Originally v2 risk; built post-bounty as a 22-test 4-checker module |
+| ~~`/zama-debug`~~ — moved to v1.1 (shipped) | Originally v2 risk; built post-bounty as a 10-pattern matcher |
 | Mainnet deploy | Ek auditing/risk gerektirir; v1 sadece Sepolia testnet |
 | Cursor `.cursorrules` native format | Generic markdown rehberler dolaylı destek sağlar; native entegrasyon submission sonrası |
 | Hardhat 3.x desteği | fhevm-plugin peer-deps Hardhat 2 only; resmi destek gelene kadar v2 |

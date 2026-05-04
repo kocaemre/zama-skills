@@ -154,3 +154,29 @@
 
 ---
 *Roadmap created: 2026-05-03*
+
+# Milestone v1.1 — Post-Bounty Skills (shipped 2026-05-04)
+
+3 additional skills built post-v1.0 ship to extend the workflow with planning + auditing + debugging capabilities.
+
+## Phases
+
+- [x] **Phase 7: Design / Audit / Debug Skills** — `/zama-design`, `/zama-audit`, `/zama-debug` shipped in parallel as a single feature wave
+  - **Goal**: Round out the workflow — users can plan a dApp before scaffolding (`/zama-design`), review code for FHE-specific bugs (`/zama-audit`), and diagnose runtime errors (`/zama-debug`).
+  - **Requirements**: DESIGN-01, AUDIT-01, DEBUG-01
+  - **Day budget**: ~0.5 day
+  - **Plans**: 3 (one per skill, dispatched in parallel worktrees)
+  - **Success**: 8 SKILL.md frontmatters valid, 286 tests green (74 new), generic docs drift clean, marketplace lists 8 skills, closing-summary chain extended (design → init, audit → debug, debug → loop)
+
+## Pipeline (8 skills)
+
+```
+/zama-design → /zama-init → /zama-contract → /zama-test → /zama-audit
+                                                              ↓
+                                                          (clean) → /zama-deploy → /zama-frontend → ship
+                                                              ↓
+                                                          (bug)   → /zama-debug → fix → loop
+```
+
+---
+*v1.1 milestone created: 2026-05-04*
