@@ -52,9 +52,19 @@ Voice-over walkthrough: `marketplace add` → `/zama-design` → `/zama-init` �
 
 After installing the plugin, jump straight to the path that matches your goal. Each path is a chain of skills; Claude Code picks the next one automatically from the closing summary, but you can also type the slash commands yourself.
 
-### Path 1 — Idea to ship (full pipeline, ~30 min)
+### Path 0 — One command, the whole thing (~30 min, recommended for first-timers)
 
-You have an idea, you want a deployed dApp. Six skills, one chain:
+```
+/zama-autonomous
+```
+
+Runs the full pipeline (design → init → contract → test → audit → deploy → frontend) in sequence. Pauses only at safety gates: design review, audit findings, the manual deploy confirmation, and final smoke. Resumable — if you stop or hit an error, re-run with `--resume` and it picks up where it left off.
+
+State lives at `.planning/v1-autonomous/state.json` (no secrets, just step progress). Run `/zama-doctor` first if you're not sure your environment is ready.
+
+### Path 1 — Manual chain (full pipeline, ~30 min)
+
+Same outcome as Path 0, but you trigger each skill yourself:
 
 ```
 /zama-design   →   "describe your idea"
@@ -66,7 +76,7 @@ You have an idea, you want a deployed dApp. Six skills, one chain:
 /zama-frontend →   wire the UI
 ```
 
-Best for: hackathon submissions, MVPs, learning the stack end-to-end.
+Best for: hackathon submissions, MVPs, learning the stack end-to-end. Each skill's closing summary tells you the next one — Claude Code auto-suggests it.
 
 ### Path 2 — Just the contract (~5 min)
 
@@ -113,7 +123,7 @@ Produces `DESIGN.md` (contract architecture + ACL strategy per actor + decryptio
 
 ---
 
-## What you get — 9 skills
+## What you get — 10 skills
 
 | Slash command | When it runs | What it does |
 |---------------|--------------|--------------|
@@ -126,6 +136,7 @@ Produces `DESIGN.md` (contract architecture + ACL strategy per actor + decryptio
 | `/zama-skills:audit` | "audit this contract", "check FHE bugs", post-`/zama-contract` review | Scans Solidity + TS for ACL gaps, cleartext leaks (require/event), HCU explosions (>12 FHE ops/fn), deprecated imports — exits 0/1/2 for CI |
 | `/zama-skills:debug` | "I got an FHE error", paste a stack trace | Matches your error against a 10+ pattern catalog (ACL revert, `initSDK undefined`, deprecated imports, HCU exceeded, SSR `indexedDB`, etc.) — returns root cause + fix command |
 | `/zama-skills:doctor` | "check zama setup", "what's missing", first-time install verification | Read-only diagnostic — checks Node, pnpm, git, `context7` MCP (required), `magic` MCP (recommended), Sepolia RPC reachability, plugin install status. Prints fix commands for whatever is missing. |
+| `/zama-skills:autonomous` | "do everything", "full pipeline", "build me a confidential dApp", first-time users | One-command orchestrator — runs design → init → contract → test → audit → deploy → frontend in sequence. Pauses at safety gates (design review, audit findings, manual deploy). Resumable via `--resume`. State at `.planning/v1-autonomous/state.json`. |
 
 `/zama-skills:deploy` has `disable-model-invocation: true` — Claude **will not** auto-deploy on its own. You must invoke it explicitly.
 

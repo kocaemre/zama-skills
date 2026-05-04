@@ -25,7 +25,8 @@ export type Phase4Skill =
   | "design"
   | "audit"
   | "debug"
-  | "doctor";
+  | "doctor"
+  | "autonomous";
 
 const KNOWN_SKILLS: ReadonlySet<string> = new Set<Phase4Skill>([
   "contract",
@@ -36,6 +37,7 @@ const KNOWN_SKILLS: ReadonlySet<string> = new Set<Phase4Skill>([
   "audit",
   "debug",
   "doctor",
+  "autonomous",
 ]);
 
 /** Resolve `<plugin-root>/shared/prompts/` from this module's location. */
@@ -64,7 +66,7 @@ export function renderClosingSummary(
 ): string {
   if (!KNOWN_SKILLS.has(skill)) {
     throw new Error(
-      `renderClosingSummary: unknown skill "${skill}". Expected one of: contract, test, deploy, frontend, design, audit, debug, doctor.`,
+      `renderClosingSummary: unknown skill "${skill}". Expected one of: contract, test, deploy, frontend, design, audit, debug, doctor, autonomous.`,
     );
   }
 

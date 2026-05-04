@@ -10,7 +10,7 @@
     {
       "name": "zama-skills",
       "source": "./plugins/zama-skills",
-      "description": "9 skills (init, contract, test, deploy, frontend, design, audit, debug, doctor) for fhEVM dApp scaffolding — context7-aware, anti-hallucination",
+      "description": "10 skills (init, contract, test, deploy, frontend, design, audit, debug, doctor, autonomous) for fhEVM dApp scaffolding — context7-aware, anti-hallucination",
       "homepage": "https://github.com/kocaemre/zama-skills",
       "repository": "https://github.com/kocaemre/zama-skills",
       "license": "MIT",
