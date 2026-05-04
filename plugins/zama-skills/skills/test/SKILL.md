@@ -376,5 +376,5 @@ Both files use the canonical **encrypt-input → call → await decrypt → asse
 
 > context7 verified the test API surface against `/zama-ai/fhevm-hardhat-template` — pinned versions match `@fhevm/hardhat-plugin@^0.4.2`.
 
-### Next: run `/zama-deploy` to ship `{{name}}` to Sepolia.
+### Next: run `/zama-audit` to verify ACL / cleartext / HCU / deprecation, then `/zama-deploy` to ship `{{name}}` to Sepolia.
 <!-- @endsync -->

@@ -341,7 +341,7 @@ Run `${CLAUDE_SKILL_DIR}/scripts/preflight.ts` via Bash. The script verifies Nod
 
 ## Step 2 — Resolve the use-case (from DESIGN.md if present, else ask)
 
-Before prompting, check whether `DESIGN.md` exists at the repo root. If it does, **read its first 10 lines** — `/zama-design` writes a structured HTML comment block at the very top:
+Before prompting, check `Glob(.planning/v1-design/*/DESIGN.md)` (the canonical location written by `/zama-design`). If multiple match, pick the most recently modified one. Also check the repo root (`./DESIGN.md`) as a fallback for users who exported the file. If a candidate is found, **read its first 10 lines** — `/zama-design` writes a structured HTML comment block at the very top:
 
 ```html
 <!-- @zama-skills:design-meta v1

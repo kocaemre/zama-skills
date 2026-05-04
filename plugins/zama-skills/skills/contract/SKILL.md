@@ -331,6 +331,17 @@ This validates the active workspace contains `packages/contracts/` and lists `@f
 
 …and STOP. Do not proceed to Step 2.
 
+## Step 1.5 — Hydrate from DESIGN.md (if present)
+
+Check `Glob(.planning/v1-design/*/DESIGN.md)` (canonical location written by `/zama-design`). If multiple, pick the most recently modified. If found, **read it** and use its sections to **pre-fill defaults** for Step 2:
+
+- The HTML meta block at the top (slug / category / useCase / contractName) gives you the contract NAME and the base.
+- The "Encrypted state schema" table gives you `<state-decls>` and the `euint*` types.
+- The "ACL grant strategy" section gives you the writer/reader matrix.
+- The "Decryption path" section gives you whether to emit `FHE.allow(handle, msg.sender)` (user-decrypt), `FHE.makePubliclyDecryptable` (public), or `FHE.requestDecryption` (oracle).
+
+When asking Step 2 questions, mark every default with `(recommended — from DESIGN.md)` so the user just hits ENTER through the chain. If no DESIGN.md exists, ask Step 2 from scratch as before.
+
 ## Step 2 — Sequential AskUserQuestion (4 questions)
 
 Use **`AskUserQuestion`** (multi-question form) to collect the contract spec. Run the four questions one at a time so each answer can validate the next.

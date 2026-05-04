@@ -1,6 +1,6 @@
 # Confidential Demo Token (cDEMO) — Live on Sepolia
 
-> A confidential ERC-7984 token built end-to-end with the **[zama-skills](https://github.com/zama-ai/zama-skills)** Claude Code plugin.
+> A confidential ERC-7984 token built end-to-end with the **[zama-skills](https://github.com/kocaemre/zama-skills)** Claude Code plugin.
 > Encrypted balances. Public transfers. Powered by [Zama Protocol's fhEVM](https://docs.zama.org/protocol).
 
 [![Sepolia Verified](https://img.shields.io/badge/Sepolia-Verified-brightgreen?logo=ethereum)](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code) [![Registry](https://img.shields.io/badge/Registry-Standalone%20ERC--7984-yellow)](https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia) [![Vercel](https://img.shields.io/badge/Vercel-Live-black?logo=vercel)](https://zama-skills.vercel.app)
@@ -72,4 +72,4 @@ See [`VERCEL.md`](./VERCEL.md) — a step-by-step guide for binding your fork of
 
 ---
 
-*Scaffolded by [zama-skills](https://github.com/zama-ai/zama-skills). Sepolia faucets: [sepoliafaucet.com](https://sepoliafaucet.com), [infura.io/faucet/sepolia](https://www.infura.io/faucet/sepolia).*
+*Scaffolded by [zama-skills](https://github.com/kocaemre/zama-skills). Sepolia faucets: [sepoliafaucet.com](https://sepoliafaucet.com), [infura.io/faucet/sepolia](https://www.infura.io/faucet/sepolia).*
