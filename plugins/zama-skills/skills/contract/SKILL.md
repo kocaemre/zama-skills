@@ -355,6 +355,7 @@ Re-prompt if invalid. Reject path-traversal segments (e.g., `..`, `/`, `\`).
 | Option | Description |
 |--------|-------------|
 | `ERC7984 (confidential token)` | Extends `@openzeppelin/confidential-contracts/token/ERC7984.sol`. Use for confidential ERC-20-style tokens. |
+| `ERC7984 ERC-20 Wrapper` | Extends `@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol`. Wraps an existing plaintext ERC-20 into a confidential ERC-7984 — `wrap(amount)` pulls in plaintext, `unwrap(handle)` releases plaintext. Constructor takes the underlying ERC-20 address. |
 | `VotesConfidential (governance)` | Extends `@openzeppelin/confidential-contracts/governance/VotesConfidential.sol`. Use for confidential voting / DAOs. |
 | `Standalone` | No base contract beyond `ZamaEthereumConfig` (renamed from `SepoliaConfig` in @fhevm/solidity 0.11.x). Use for custom logic (auctions, escrows, counters). |
 | `Ownable extension` | `Standalone` + `Ownable` from `@openzeppelin/contracts/access/Ownable.sol`. |

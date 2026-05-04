@@ -292,6 +292,27 @@ describe("generateContract", () => {
     expect(src).toMatch(/is ERC7984/);
   });
 
+  it("wrapper: imports ERC7984ERC20Wrapper extension", () => {
+    generateContract({
+      cwd: dir,
+      inputs: {
+        name: "MyWrapper",
+        base: "wrapper",
+        schema: [],
+        decryptionPath: "user",
+      },
+    });
+    const src = readFileSync(
+      join(dir, "packages", "contracts", "contracts", "MyWrapper.sol"),
+      "utf8",
+    );
+    expect(src).toMatch(
+      /from "@openzeppelin\/confidential-contracts\/token\/ERC7984\/extensions\/ERC7984ERC20Wrapper\.sol"/,
+    );
+    expect(src).toMatch(/is ERC7984ERC20Wrapper/);
+    expect(src).toMatch(/IERC20 underlying_/);
+  });
+
   it("votes: imports VotesConfidential", () => {
     generateContract({
       cwd: dir,

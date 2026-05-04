@@ -41,7 +41,7 @@ export type EncryptedType =
   | "ebool"
   | "eaddress";
 
-export type BaseContract = "standalone" | "erc7984" | "votes" | "ownable";
+export type BaseContract = "standalone" | "erc7984" | "wrapper" | "votes" | "ownable";
 export type DecryptionPath = "public" | "user" | "oracle";
 
 export interface SchemaField {
@@ -81,6 +81,8 @@ function templateFor(base: BaseContract): string {
   switch (base) {
     case "erc7984":
       return resolve(root, "erc7984.sol.tpl");
+    case "wrapper":
+      return resolve(root, "wrapper.sol.tpl");
     case "votes":
       return resolve(root, "votes.sol.tpl");
     case "ownable":
@@ -193,7 +195,7 @@ function validateInputs(inputs: ContractInputs): void {
       `Contract name "${inputs.name}" must be PascalCase matching ${NAME_RE}. Refusing path-traversal or non-identifier names.`,
     );
   }
-  const validBases: BaseContract[] = ["standalone", "erc7984", "votes", "ownable"];
+  const validBases: BaseContract[] = ["standalone", "erc7984", "wrapper", "votes", "ownable"];
   if (!validBases.includes(inputs.base)) {
     throw new Error(`Unknown base contract: ${inputs.base}`);
   }

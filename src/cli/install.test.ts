@@ -33,7 +33,7 @@ afterEach(async () => {
 });
 
 describe('TARGETS catalogue', () => {
-  it('lists all 7 supported tools', () => {
+  it('lists all 8 supported tools', () => {
     const ids = TARGETS.map((t) => t.id).sort();
     expect(ids).toEqual([
       'aider',
@@ -43,6 +43,7 @@ describe('TARGETS catalogue', () => {
       'cursor',
       'generic',
       'opencode',
+      'windsurf',
     ]);
   });
 

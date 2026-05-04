@@ -15,6 +15,7 @@ import path from 'node:path';
 export type TargetId =
   | 'claude-code'
   | 'cursor'
+  | 'windsurf'
   | 'opencode'
   | 'aider'
   | 'continue'
@@ -104,6 +105,20 @@ export const TARGETS: Target[] = [
       (await exists(path.join(root, '.cursor'))) ||
       (await exists(path.join(root, '.cursorrules'))) ||
       (await exists(path.join(root, '.cursorignore'))),
+  },
+  {
+    id: 'windsurf',
+
+    supportsGlobalScope: false,
+    label: 'Windsurf',
+    description: 'Rules under .windsurf/rules/zama-skills/ — read by Cascade agent',
+    assetShape: 'generic',
+    destDir: (root) => path.join(root, '.windsurf', 'rules', 'zama-skills'),
+    postInstallHint: (root) =>
+      `Windsurf reads .windsurf/rules/ as Cascade agent context. Try: "init a confidential token dApp" in Cascade.`,
+    detect: async (root) =>
+      (await exists(path.join(root, '.windsurf'))) ||
+      (await exists(path.join(root, '.windsurfrules'))),
   },
   {
     id: 'opencode',

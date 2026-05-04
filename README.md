@@ -26,7 +26,7 @@ Click the section that matches your editor / agent. Claude Code gets the richest
 > Don't see your tool? Pick **Generic** at the bottom — it drops a self-contained `zama-skills-knowledge/` folder you can hand-point any AI agent at.
 
 <details>
-<summary><b>🟡 Claude Code</b> — slash commands, auto-routing, full pipeline (recommended)</summary>
+<summary><b>Claude Code</b> — slash commands, auto-routing, full pipeline (recommended)</summary>
 
 ### Install (one-time)
 
@@ -70,7 +70,7 @@ npx zama-skills@latest uninstall --tool claude-code --force   # npx install
 </details>
 
 <details>
-<summary><b>⚫ Cursor</b> — composer + agent rules</summary>
+<summary><b>Cursor</b> — composer + agent rules</summary>
 
 ### Install
 
@@ -102,7 +102,39 @@ npx zama-skills@latest uninstall --tool cursor --force
 </details>
 
 <details>
-<summary><b>🟢 OpenCode</b> — AGENTS.md + per-skill rules</summary>
+<summary><b>Windsurf</b> — Cascade agent rules</summary>
+
+### Install
+
+```bash
+cd <your-project>
+npx zama-skills@latest install --tool windsurf --force
+```
+
+Drops the rule pack at `.windsurf/rules/zama-skills/`. Windsurf's Cascade agent reads it as project context — no restart needed in most setups.
+
+### How to use
+
+Open Cascade and ask in plain English:
+
+> "init a confidential token dApp using zama-skills"
+>
+> "write the confidential transfer logic following zama-skills/contract.md"
+>
+> "wire the frontend with relayer-sdk per zama-skills/frontend.md"
+
+The `zama-skills/README.md` inside the rules folder enumerates every skill and the hard rules to enforce.
+
+### Uninstall
+
+```bash
+npx zama-skills@latest uninstall --tool windsurf --force
+```
+
+</details>
+
+<details>
+<summary><b>OpenCode</b> — AGENTS.md + per-skill rules</summary>
 
 ### Install
 
@@ -132,7 +164,7 @@ The `AGENTS.md` pointer block is stripped automatically; the rest of your file i
 </details>
 
 <details>
-<summary><b>🔵 Codex CLI (OpenAI)</b> — AGENTS.md convention</summary>
+<summary><b>Codex CLI (OpenAI)</b> — AGENTS.md convention</summary>
 
 ### Install
 
@@ -160,7 +192,7 @@ npx zama-skills@latest uninstall --tool codex --force
 </details>
 
 <details>
-<summary><b>🟣 Aider</b> — CONVENTIONS.md auto-load</summary>
+<summary><b>Aider</b> — CONVENTIONS.md auto-load</summary>
 
 ### Install
 
@@ -194,7 +226,7 @@ npx zama-skills@latest uninstall --tool aider --force
 </details>
 
 <details>
-<summary><b>🟠 Continue (VS Code / JetBrains)</b> — agent context</summary>
+<summary><b>Continue (VS Code / JetBrains)</b> — agent context</summary>
 
 ### Install
 
@@ -222,7 +254,7 @@ npx zama-skills@latest uninstall --tool continue --force
 </details>
 
 <details>
-<summary><b>⚪ Any other AI tool (Generic)</b> — portable knowledge pack</summary>
+<summary><b>Any other AI tool (Generic)</b> — portable knowledge pack</summary>
 
 ### Install
 
@@ -277,6 +309,7 @@ The interactive picker auto-detects which tools you already use (`.claude/`, `.c
 |------|--------------------------------------|---------------------------|
 | **Claude Code** | `<cwd>/.claude/skills/zama-skills/` | ✅ yes — `~/.claude/skills/` is real |
 | **Cursor** | `<cwd>/.cursor/rules/zama-skills/` | ❌ project-local only |
+| **Windsurf** | `<cwd>/.windsurf/rules/zama-skills/` | ❌ project-local only |
 | **OpenCode** | `<cwd>/.opencode/rules/zama-skills/` + `<cwd>/AGENTS.md` | ❌ project-local only |
 | **Codex CLI** | `<cwd>/.codex/rules/zama-skills/` + `<cwd>/AGENTS.md` | ❌ project-local only |
 | **Aider** | `<cwd>/.aider/zama-skills/` + `<cwd>/CONVENTIONS.md` | ❌ project-local only |
