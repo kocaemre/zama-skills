@@ -20,15 +20,15 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: [
-          // 'same-origin-allow-popups' keeps Cross-Origin Isolation (so
-          // SharedArrayBuffer + WASM threads work for relayer-sdk) while still
-          // allowing popup-based wallet flows (Coinbase Smart Wallet / Base
-          // Account SDK reject the strict 'same-origin').
-          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
-          // 'credentialless' is more permissive than 'require-corp' — assets
-          // load without explicit CORS headers but the page still gets
-          // Cross-Origin Isolation. Required because RainbowKit pulls icons
-          // from connectors that don't ship CORP headers.
+          // 'same-origin' is REQUIRED for crossOriginIsolated=true → enables
+          // SharedArrayBuffer → @zama-fhe/relayer-sdk WASM threads work.
+          // Tradeoff: Coinbase Smart Wallet / Base Account SDK reject this
+          // and log a warning, but they degrade gracefully (the connector is
+          // simply not selectable). MetaMask / WalletConnect work fine.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          // 'credentialless' instead of strict 'require-corp' so RainbowKit
+          // can load connector icons from cross-origin sources without a CORP
+          // header — Cross-Origin Isolation stays on (Chrome 96+, FF 117+).
           { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
         ],
       },
