@@ -1,0 +1,181 @@
+/**
+ * patterns.ts — known fhEVM error patterns matched by /zama-debug.
+ *
+ * Each entry maps a regex (matched against pasted error text) to a
+ * structured diagnosis: likely cause, concrete fix command(s), reference
+ * link. Keep this list in sync with `assets/PATTERNS.md` (CI cross-check).
+ *
+ * Add new patterns by appending to PATTERNS — order matters only for
+ * tie-breaking (first match wins; place more specific patterns first).
+ */
+
+export interface DebugPattern {
+  /** Stable kebab-case identifier; mirrored as the heading in PATTERNS.md. */
+  name: string;
+  /** Short human-readable label (one line, ≤80 chars). */
+  label: string;
+  /** Regex matched against the full pasted error text (case-insensitive). */
+  pattern: RegExp;
+  /** One-paragraph explanation of the likely root cause. */
+  cause: string;
+  /**
+   * Ordered fix steps. Each entry is either a shell command (prefixed with
+   * `$ `) or a free-text instruction. Caller renders verbatim.
+   */
+  fix: string[];
+  /** Single canonical reference URL or context7 query string. */
+  reference: string;
+}
+
+export const PATTERNS: DebugPattern[] = [
+  {
+    name: "acl-not-allowed",
+    label: "Revert: ACL: not allowed (missing FHE.allow / FHE.allowThis)",
+    pattern: /(ACL[:\s]*not allowed|ACLNotAllowed|allowed\(\) returned false)/i,
+    cause:
+      "The Zama Protocol ACL rejected a read of an encrypted handle because no grant was attached to the calling address (or the contract itself). Every state-write of an encrypted value must be paired with FHE.allowThis(handle); every handle returned to a user must also receive FHE.allow(handle, msg.sender) before being read off-chain.",
+    fix: [
+      "Locate the function that produces or stores the encrypted handle.",
+      "Immediately after the assignment, add: FHE.allowThis(handle);",
+      "If the handle is meant for off-chain user-decrypt, also add: FHE.allow(handle, msg.sender);",
+      "Recompile and re-run the failing call.",
+      "$ npx hardhat compile",
+    ],
+    reference: "context7 /zama-ai/fhevm topic=acl",
+  },
+  {
+    name: "relayer-sdk-bundle-import",
+    label: "TypeError: Cannot read properties of undefined (reading 'initSDK')",
+    pattern: /Cannot read propert(y|ies) of undefined \(reading ['\"]initSDK['\"]\)/i,
+    cause:
+      "The relayer SDK was imported from the Node-only `/bundle` entry inside a browser/Vite build. The `/bundle` build does not export `initSDK`; the browser entry is `@zama-fhe/relayer-sdk/web`.",
+    fix: [
+      "Open the file containing `from \"@zama-fhe/relayer-sdk/bundle\"`.",
+      "Change the specifier to `@zama-fhe/relayer-sdk/web`.",
+      "Restart the dev server so Vite/Webpack re-resolves the entry.",
+      "$ rm -rf node_modules/.vite && npm run dev",
+    ],
+    reference:
+      "https://docs.zama.ai/protocol/relayer-sdk/web-vs-bundle",
+  },
+  {
+    name: "deprecated-fhevmjs",
+    label: "Module not found: 'fhevmjs' (deprecated 2025-07-10)",
+    pattern: /(Module not found|Cannot find module)[^\n]*['\"]fhevmjs['\"]/i,
+    cause:
+      "`fhevmjs` was officially deprecated 2025-07-10. The replacement is `@zama-fhe/relayer-sdk@^0.4.2`. Skills MUST refuse to install or import the deprecated package — it has no upstream support and will fail against the current Sepolia KMS/relayer contracts.",
+    fix: [
+      "$ npm uninstall fhevmjs",
+      "$ npm install @zama-fhe/relayer-sdk@^0.4.2",
+      "Replace every `import ... from \"fhevmjs\"` with `import ... from \"@zama-fhe/relayer-sdk/web\"` (browser) or `/node` (Node).",
+      "Re-check call sites — the API surface changed (e.g., `createInstance` signature).",
+    ],
+    reference: "https://www.npmjs.com/package/fhevmjs (deprecated)",
+  },
+  {
+    name: "deprecated-fhevm-root",
+    label: "Module not found: 'fhevm' (deprecated 2025-07-10)",
+    pattern: /(Module not found|Cannot find module|File import callback not supported)[^\n]*['\"]fhevm['\"](?!\/)/i,
+    cause:
+      "The root `fhevm` Solidity package was deprecated 2025-07-10. The replacement is `@fhevm/solidity@^0.11.1`, which is what `@openzeppelin/confidential-contracts` and `@fhevm/hardhat-plugin` peer-depend on.",
+    fix: [
+      "$ npm uninstall fhevm",
+      "$ npm install @fhevm/solidity@^0.11.1",
+      "Replace every Solidity `import \"fhevm/...\"` with `import \"@fhevm/solidity/...\"`.",
+      "$ npx hardhat compile",
+    ],
+    reference: "https://www.npmjs.com/package/fhevm (deprecated)",
+  },
+  {
+    name: "hcu-exceeded",
+    label: "HCU exceeded / out of gas during FHE op chain",
+    pattern: /(HCU exceeded|HCU budget|homomorphic compute units|out of gas)/i,
+    cause:
+      "Sepolia enforces an HCU (homomorphic compute units) budget of ~20M per tx and ~5M depth. Long FHE.add/FHE.select chains, nested FHE.select inside loops, or large encrypted-int operations exceed the budget and revert. The fix is structural: split the chain across multiple transactions, hoist invariant work, or use a smaller encrypted type (euint32 instead of euint64 where range allows).",
+    fix: [
+      "Profile the failing tx: `pnpm gas-report` or hardhat-gas-reporter output.",
+      "Identify the longest FHE op chain (typically nested FHE.select or for-loops).",
+      "Split into multiple txs: store intermediate handles in storage, finalize in a follow-up call.",
+      "If feasible, downcast (e.g., euint64 → euint32) — smaller types use fewer HCUs per op.",
+      "Re-run the failing test with the split flow.",
+    ],
+    reference: "context7 /zama-ai/fhevm topic=hcu",
+  },
+  {
+    name: "next-indexeddb-ssr",
+    label: "BAILOUT_TO_CLIENT_SIDE_RENDERING + indexedDB undefined",
+    pattern: /(BAILOUT_TO_CLIENT_SIDE_RENDERING|indexedDB is not defined|ReferenceError: indexedDB)/i,
+    cause:
+      "The relayer SDK and wagmi's persistent storage rely on `indexedDB`, which does not exist during Next.js / SSR pre-rendering. Mounting WagmiProvider at module top level evaluates the storage factory on the server and crashes. The Phase 5 fix is to gate the provider tree behind a `mounted` boolean that flips after `useEffect` runs (client-only).",
+    fix: [
+      "In your top-level providers component, add: `const [mounted, setMounted] = useState(false);`",
+      "Add: `useEffect(() => setMounted(true), []);`",
+      "Render `if (!mounted) return null;` before the WagmiProvider tree.",
+      "Move every relayer-sdk `createInstance` / `initSDK` call inside `useEffect` or a client component.",
+      "$ npm run dev (verify no SSR error)",
+    ],
+    reference:
+      "https://wagmi.sh/react/guides/ssr",
+  },
+  {
+    name: "etherscan-v1-deprecated",
+    label: "Etherscan: V1 endpoint deprecated",
+    pattern: /(Etherscan[^\n]*V1[^\n]*deprecat|api\.etherscan\.io\/v1)/i,
+    cause:
+      "`@nomicfoundation/hardhat-verify@^2` migrated to Etherscan v2 and rejects the legacy `etherscan: { apiKey: { sepolia: \"...\" } }` object form. The current shape is a top-level string: `etherscan: { apiKey: process.env.ETHERSCAN_API_KEY }`.",
+    fix: [
+      "Open `hardhat.config.ts`.",
+      "Replace `etherscan: { apiKey: { sepolia: \"...\" } }` with `etherscan: { apiKey: process.env.ETHERSCAN_API_KEY }`.",
+      "Ensure `ETHERSCAN_API_KEY` is set in `.env` (a single multi-chain key now works for Sepolia/Mainnet).",
+      "$ npx hardhat verify --network sepolia <addr> [args...]",
+    ],
+    reference:
+      "https://hardhat.org/hardhat-runner/plugins/nomicfoundation-hardhat-verify",
+  },
+  {
+    name: "relayer-timeout",
+    label: "Relayer 502 / timeout / network error",
+    pattern: /(relayer[^\n]*(502|504|timeout|ETIMEDOUT|ECONNRESET|fetch failed))/i,
+    cause:
+      "The Zama relayer at `https://relayer.testnet.zama.cloud` is transiently unreachable. This is almost always upstream — verify status, then retry with exponential backoff. If persistent, your network may be blocking the relayer host.",
+    fix: [
+      "Check the Zama status page or the #protocol-status channel in Zama's Discord.",
+      "$ curl -I https://relayer.testnet.zama.cloud/health",
+      "Retry the failing call after 30s; the SDK retries internally only once.",
+      "If the user is on a corporate / restrictive network, suggest a different network or VPN.",
+    ],
+    reference:
+      "https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia",
+  },
+  {
+    name: "wagmi-undefined-readcontract",
+    label: "wagmi useReadContract returns undefined (ABI mismatch)",
+    pattern: /(useReadContract[^\n]*undefined|ContractFunctionExecutionError|Function .* not found on ABI|Function selector)/i,
+    cause:
+      "The frontend ABI is stale: the contract was redeployed (or function signature changed) but the ABI bundled into the React app still reflects the old shape. wagmi silently returns `undefined` because the function selector does not match. The fix is to re-sync ABIs from the deployments artifact into the frontend.",
+    fix: [
+      "$ npx tsx scripts/sync-frontend-abi.ts",
+      "Verify the ABI file (`packages/frontend/src/abi/<Contract>.json`) timestamp updated.",
+      "Restart the dev server so Vite re-imports the ABI.",
+      "$ rm -rf node_modules/.vite && npm run dev",
+    ],
+    reference: "context7 /zama-ai/fhevm-hardhat-template topic=deploy",
+  },
+  {
+    name: "zama-config-not-found",
+    label: "Solidity compile: ZamaEthereumConfig not found",
+    pattern: /(ZamaEthereumConfig|ZamaConfig\.sol)[^\n]*(not found|undeclared|cannot find)/i,
+    cause:
+      "`ZamaEthereumConfig` (and the `SepoliaConfig` companion contract) live under `@fhevm/solidity/config/ZamaConfig.sol`. The import path was reorganized in `@fhevm/solidity@0.11.x` — older snippets that import directly from `@fhevm/solidity/ZamaConfig.sol` will fail.",
+    fix: [
+      "In your contract, change the import to: `import { SepoliaConfig } from \"@fhevm/solidity/config/ZamaConfig.sol\";`",
+      "Make sure `@fhevm/solidity` is `^0.11.1` in package.json.",
+      "$ npm install @fhevm/solidity@^0.11.1",
+      "$ npx hardhat compile",
+    ],
+    reference: "context7 /zama-ai/fhevm topic=config",
+  },
+];
+
+/** Number of patterns currently registered. Used by tests + PATTERNS.md sync. */
+export const PATTERN_COUNT: number = PATTERNS.length;
