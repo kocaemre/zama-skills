@@ -7,21 +7,23 @@
 //   decrypted   plaintext available in `value`
 //   error       decrypt failed; reason in `error`
 //
-// Why explicit states? On Sepolia user-decryption round-trips routinely take
-// 5–10s (KMS share assembly + relayer round-trip). A two-state loading flag
-// makes the UI look frozen; surfacing `requesting` lets you render a spinner
-// with a "patience required" copy.
+// userDecrypt under the hood (per @zama-fhe/relayer-sdk@^0.4.x):
+//   1. instance.generateKeypair()                    — ephemeral signing keypair
+//   2. instance.createEIP712(...)                    — typed-data envelope to sign
+//   3. walletClient.signTypedData(...)               — user EIP-712 signature
+//   4. instance.userDecrypt(handleContractPairs, ...)— relayer round-trip
 //
-// Caching: this hook is intentionally minimal — no built-in cache, no auto-
-// retry. To wrap with React Query / SWR:
-//
-//   const q = useQuery({ queryKey: ['fhe', handle], queryFn: () => decryptOnce(handle) });
-//
-// where `decryptOnce` calls `getFhevmInstance().userDecrypt(...)` directly.
-// The hook below is the right tool when you want a deliberate, user-triggered
-// reveal (button click) — the typical UX for confidential balances.
+// IMPORTANT — failure modes documented in /zama-debug:
+// - "no cached instance" → a parent component MUST call useFhevmInstance()
+//   before this hook runs. Without it the no-args getFhevmInstance() throws.
+// - "InvalidTypeError ... UintNumber" → startTimestamp + durationDays MUST
+//   be number, not string. SDK 0.4.x zod schema rejects string.
+// - "Invalid public or private key" → forgot to .replace(/^0x/, "") the
+//   wallet signature before passing to relayer.
 
 import { useCallback, useRef, useState } from "react";
+import { useAccount, useWalletClient } from "wagmi";
+
 import { getFhevmInstance } from "@/lib/fhe";
 
 export type DecryptStatus = "idle" | "requesting" | "decrypted" | "error";
@@ -33,13 +35,25 @@ export interface UseDecryptedReturn<T> {
   request: () => void;
 }
 
+export interface UseDecryptedArgs {
+  /** Encrypted bytes32 handle to decrypt; null disables. */
+  handle: string | null;
+  /** Contract that emitted the handle — required by the relayer's auth check. */
+  contractAddress: `0x${string}`;
+}
+
 /**
  * useDecrypted — request a single user-decryption for an encrypted handle.
  *
- * @param handle  bytes32 handle string returned by your contract; null disables.
- * @returns       { status, value, error, request }
+ * The contractAddress is required: the relayer enforces a per-contract
+ * authorization check, so the EIP-712 envelope binds the request to the
+ * exact contract that emitted the handle.
  */
-export function useDecrypted<T = bigint>(handle: string | null): UseDecryptedReturn<T> {
+export function useDecrypted<T = bigint>(args: UseDecryptedArgs): UseDecryptedReturn<T> {
+  const { handle, contractAddress } = args;
+  const { address: userAddress } = useAccount();
+  const { data: walletClient } = useWalletClient();
+
   const [status, setStatus] = useState<DecryptStatus>("idle");
   const [value, setValue] = useState<T | undefined>(undefined);
   const [error, setError] = useState<Error | undefined>(undefined);
@@ -47,27 +61,85 @@ export function useDecrypted<T = bigint>(handle: string | null): UseDecryptedRet
 
   const request = useCallback(() => {
     if (handle === null) return;
+    if (!userAddress) return;
+    if (!walletClient) return;
     if (inFlight.current) return;
+
     inFlight.current = true;
     setStatus("requesting");
     setError(undefined);
 
     void (async () => {
       try {
-        const instance = await getFhevmInstance();
-        // Per relayer-sdk surface (@zama-fhe/relayer-sdk@^0.4.2):
-        //   instance.userDecrypt({ handles: string[], ... }) → Record<handle, plaintext>
-        // The full call requires signature + EIP-712 typed data plumbing the
-        // app already does; consult the project's wagmi/ethers signer to fill.
-        const result = (await (instance as unknown as {
-          userDecrypt: (args: { handles: string[] }) => Promise<Record<string, T>>;
-        }).userDecrypt({ handles: [handle] })) as Record<string, T>;
+        const instance = (await getFhevmInstance()) as unknown as {
+          generateKeypair: () => { publicKey: string; privateKey: string };
+          createEIP712: (
+            publicKey: string,
+            contractAddresses: string[],
+            startTimestamp: number,
+            durationDays: number,
+          ) => {
+            domain: Record<string, unknown>;
+            types: Record<string, unknown>;
+            message: Record<string, unknown>;
+          };
+          userDecrypt: (
+            handleContractPairs: { handle: string; contractAddress: string }[],
+            privateKey: string,
+            publicKey: string,
+            signature: string,
+            contractAddresses: string[],
+            userAddress: string,
+            startTimestamp: number,
+            durationDays: number,
+          ) => Promise<Record<string, bigint | string | boolean>>;
+        };
+
+        // 1. Ephemeral keypair (per-decrypt; never persisted).
+        const keypair = instance.generateKeypair();
+
+        // 2. EIP-712 envelope: bind public key + contracts + validity window.
+        const startTimestamp = Math.floor(Date.now() / 1000);
+        const durationDays = 10;
+        const contractAddresses = [contractAddress];
+
+        const eip712 = instance.createEIP712(
+          keypair.publicKey,
+          contractAddresses,
+          startTimestamp,
+          durationDays,
+        );
+
+        // 3. User signs the typed data with their wallet (viem WalletClient).
+        const eip712Types = eip712.types as { [k: string]: { name: string; type: string }[] };
+        const signature = await walletClient.signTypedData({
+          account: userAddress,
+          domain: eip712.domain as Parameters<typeof walletClient.signTypedData>[0]["domain"],
+          types: {
+            UserDecryptRequestVerification: eip712Types["UserDecryptRequestVerification"]!,
+          },
+          primaryType: "UserDecryptRequestVerification",
+          message: eip712.message as Record<string, unknown>,
+        });
+
+        // 4. Relayer round-trip. signature MUST be stripped of '0x'.
+        const handleContractPairs = [{ handle, contractAddress }];
+        const result = await instance.userDecrypt(
+          handleContractPairs,
+          keypair.privateKey,
+          keypair.publicKey,
+          signature.replace(/^0x/, ""),
+          contractAddresses,
+          userAddress,
+          startTimestamp,
+          durationDays,
+        );
 
         const plain = result[handle];
         if (plain === undefined) {
           throw new Error(`[useDecrypted] relayer returned no value for handle ${handle}`);
         }
-        setValue(plain);
+        setValue(plain as T);
         setStatus("decrypted");
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -76,7 +148,7 @@ export function useDecrypted<T = bigint>(handle: string | null): UseDecryptedRet
         inFlight.current = false;
       }
     })();
-  }, [handle]);
+  }, [handle, contractAddress, userAddress, walletClient]);
 
   return { status, value, error, request };
 }

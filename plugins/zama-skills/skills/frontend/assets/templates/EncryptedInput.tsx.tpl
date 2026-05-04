@@ -35,17 +35,25 @@ export interface EncryptedInputProps {
    * Called once the SDK returns `{ handles[0], inputProof }`. The caller
    * wires these as the encrypted-input args of their contract write.
    */
-  onEncrypted: (out: { handle: string; inputProof: string }) => void;
+  onEncrypted: (out: { handle: `0x${string}`; inputProof: `0x${string}` }) => void;
   /** Optional placeholder for the input. */
   placeholder?: string;
-  /** Optional className passthrough. */
+  /** Optional className passthrough — applied to the wrapper div. */
   className?: string;
+  /**
+   * Optional decimals — when set, the user's typed value is multiplied by
+   * 10^decimals before encryption. Lets users type "15" or "1.5" for an
+   * ERC-20-style token whose on-chain unit is value * 10^decimals (raw
+   * uint64). Without this, "15" gets encrypted as raw 15 and the contract
+   * sees 0.000015 if it has 6 decimals.
+   */
+  decimals?: number;
 }
 
 type Phase = "idle" | "encrypting" | "done" | "error";
 
 export function EncryptedInput(props: EncryptedInputProps): JSX.Element {
-  const { contractAddress, signerAddress, type, onEncrypted, placeholder, className } = props;
+  const { contractAddress, signerAddress, type, onEncrypted, placeholder, className, decimals } = props;
   const [raw, setRaw] = useState<string>("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [errMsg, setErrMsg] = useState<string | null>(null);
@@ -56,9 +64,20 @@ export function EncryptedInput(props: EncryptedInputProps): JSX.Element {
 
     let asBig: bigint;
     try {
-      asBig = BigInt(raw.trim());
+      // Allow decimal inputs (e.g. "15" or "1.5") when decimals prop is set;
+      // require pure integer otherwise. Without scaling, "15" with a 6-decimal
+      // token becomes 0.000015 — a common footgun this prop guards against.
+      if (typeof decimals === "number" && decimals > 0) {
+        const [intPart, fracRaw = ""] = raw.trim().split(".");
+        if (!/^\d+$/.test(intPart ?? "")) throw new Error("non-numeric");
+        if (fracRaw && !/^\d+$/.test(fracRaw)) throw new Error("non-numeric fraction");
+        const frac = (fracRaw + "0".repeat(decimals)).slice(0, decimals);
+        asBig = BigInt((intPart ?? "0") + frac);
+      } else {
+        asBig = BigInt(raw.trim());
+      }
     } catch {
-      setErrMsg(`"${raw}" is not an integer`);
+      setErrMsg(`"${raw}" is not a valid number`);
       setPhase("error");
       return;
     }
@@ -102,17 +121,29 @@ export function EncryptedInput(props: EncryptedInputProps): JSX.Element {
               ? (builder as { add32: (v: bigint) => { encrypt: () => Promise<{ handles: string[]; inputProof: string }> } }).add32
               : (builder as { add64: (v: bigint) => { encrypt: () => Promise<{ handles: string[]; inputProof: string }> } }).add64;
 
-      const stage = adder.call(builder, asBig) as { encrypt: () => Promise<{ handles: string[]; inputProof: string }> };
+      const stage = adder.call(builder, asBig) as { encrypt: () => Promise<{ handles: unknown[]; inputProof: unknown }> };
       const out = await stage.encrypt();
-      const handle = out.handles[0];
-      if (!handle) throw new Error("relayer returned no handle");
-      onEncrypted({ handle, inputProof: out.inputProof });
+      const rawHandle = out.handles[0];
+      if (!rawHandle) throw new Error("relayer returned no handle");
+      // SDK 0.4.x returns Uint8Array for handles[]/inputProof despite the TS
+      // shape claiming string. wagmi/viem expect 0x-hex; without coercion the
+      // contract write throws "e.replace is not a function" inside viem.
+      const toHex = (v: unknown): `0x${string}` => {
+        if (typeof v === "string") return v.startsWith("0x") ? (v as `0x${string}`) : (`0x${v}` as `0x${string}`);
+        if (v instanceof Uint8Array) {
+          let h = "0x";
+          for (const b of v) h += b.toString(16).padStart(2, "0");
+          return h as `0x${string}`;
+        }
+        throw new Error(`unexpected encrypt() output type: ${typeof v}`);
+      };
+      onEncrypted({ handle: toHex(rawHandle), inputProof: toHex(out.inputProof) });
       setPhase("done");
     } catch (err) {
       setErrMsg(err instanceof Error ? err.message : String(err));
       setPhase("error");
     }
-  }, [raw, type, contractAddress, signerAddress, onEncrypted]);
+  }, [raw, type, contractAddress, signerAddress, onEncrypted, decimals]);
 
   return (
     <div className={className}>
