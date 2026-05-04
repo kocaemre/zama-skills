@@ -114,6 +114,74 @@ export function checkCleartext(file: string, source: string): Finding[] {
     });
   }
 
+  // 3b. requestDecryption callback that re-leaks plaintext.
+  //   In @fhevm/solidity 0.11.x decryption is async: `FHE.requestDecryption(handles, callbackSelector)`
+  //   then an oracle calls back with `(uint256 requestId, bytes calldata cleartexts, bytes calldata proof)`.
+  //   The callback body must NOT emit() those cleartexts nor store them in a public mapping —
+  //   the whole point of doing this off-chain is keeping them off-chain. Flag when it does.
+  const fnHeaderRe =
+    /\bfunction\s+([A-Za-z_]\w*Callback|[Oo]nDecrypted\w*|[Cc]allback\w*|fulfillDecryption\w*)\s*\(([^)]*)\)/;
+  for (let i = 0; i < lines.length; i += 1) {
+    const header = fnHeaderRe.exec(lines[i] as string);
+    if (!header) continue;
+    const params = header[2] as string;
+    // Identify the cleartext/plain parameter name(s) — anything bytes / uint that isn't requestId / proof.
+    const paramNames = params
+      .split(",")
+      .map((p) => p.trim().split(/\s+/).pop() ?? "")
+      .filter((n) => n && !/^(?:requestId|proof|signatures?)$/i.test(n));
+    if (paramNames.length === 0) continue;
+    // Walk the body until matching close-brace at the function-declaration depth.
+    let depth = 0;
+    let started = false;
+    for (let j = i; j < lines.length; j += 1) {
+      const line = lines[j] as string;
+      const opens = (line.match(/\{/g) ?? []).length;
+      const closes = (line.match(/\}/g) ?? []).length;
+      depth += opens - closes;
+      if (opens > 0) started = true;
+      if (started && depth === 0 && j > i) break;
+      if (j === i) continue;
+      // emit ... (...)
+      const em = /\bemit\s+\w+\s*\(([^;]*)\)/.exec(line);
+      if (em) {
+        const emArgs = em[1] as string;
+        const leaked = paramNames.find((p) => new RegExp(`\\b${p}\\b`).test(emArgs));
+        if (leaked) {
+          findings.push({
+            file,
+            line: j + 1,
+            severity: "CRITICAL",
+            category: "CLEARTEXT",
+            rule: "cleartext-callback-emit",
+            message: `Decryption callback \`${header[1] ?? "callback"}\` emits its cleartext parameter \`${leaked}\` in an event. Events are public — this defeats off-chain decryption entirely.`,
+            suggestion:
+              "Do not emit the decrypted plaintext. Forward the requestId / handle to the off-chain consumer (relayer SDK / indexer) and emit only the request reference.",
+            snippet: line.trim(),
+          });
+        }
+      }
+      // Storage write to a `public` field: <name>[...] = <param>
+      const sw = /^\s*([A-Za-z_]\w*)\s*\[[^\]]*\]\s*=\s*([A-Za-z_]\w*)\s*;/.exec(line);
+      if (sw) {
+        const target = sw[1] as string;
+        const value = sw[2] as string;
+        if (paramNames.includes(value)) {
+          findings.push({
+            file,
+            line: j + 1,
+            severity: "WARNING",
+            category: "CLEARTEXT",
+            rule: "cleartext-callback-store",
+            message: `Decryption callback writes plaintext \`${value}\` into storage slot \`${target}\`. If \`${target}\` is \`public\`, the auto-generated getter exposes the cleartext.`,
+            suggestion: `Make sure \`${target}\` is \`private\`/\`internal\` and gated by an explicit caller check, or restructure so the cleartext stays off-chain.`,
+            snippet: line.trim(),
+          });
+        }
+      }
+    }
+  }
+
   // 3. raw decrypt-then-emit in same function (decrypt at line X, emit before next `function` keyword)
   // Approximation: any `FHE.decrypt(` followed within 8 lines by `emit` is suspicious even if vars don't link.
   for (let i = 0; i < lines.length; i += 1) {

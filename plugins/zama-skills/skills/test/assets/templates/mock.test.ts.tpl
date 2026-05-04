@@ -5,7 +5,10 @@
 
 import { expect } from "chai";
 import { ethers, fhevm } from "hardhat";
-import { FhevmType } from "@fhevm/mock-utils";
+// FhevmType is re-exported by @fhevm/hardhat-plugin. (@fhevm/mock-utils is a
+// transitive dep and not part of the public API — importing from the plugin
+// matches every official fhevm-hardhat-template example.)
+import { FhevmType } from "@fhevm/hardhat-plugin";
 
 describe("{{NAME}} (mock)", function () {
   let contract: any;
@@ -31,7 +34,13 @@ describe("{{NAME}} (mock)", function () {
 
     // 3. Decrypt the stored handle and assert value matches.
     const handle = await contract.{{READ_FN}}();
-    const clear = await fhevm.userDecryptEuint(FhevmType.{{EUINT_TYPE}}, handle, signer);
+    // userDecryptEuint signature is (FhevmType, handle, contractAddress, signer).
+    const clear = await fhevm.userDecryptEuint(
+      FhevmType.{{EUINT_TYPE}},
+      handle,
+      contractAddress,
+      signer,
+    );
     expect(clear).to.eq(42n);
   });
 
@@ -47,6 +56,7 @@ describe("{{NAME}} (mock)", function () {
     const reDecrypt = await fhevm.userDecryptEuint(
       FhevmType.{{EUINT_TYPE}},
       await contract.{{READ_FN}}(),
+      contractAddress,
       signer,
     );
     expect(reDecrypt).to.eq(7n);

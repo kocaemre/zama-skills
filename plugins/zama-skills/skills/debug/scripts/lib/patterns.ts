@@ -44,19 +44,20 @@ export const PATTERNS: DebugPattern[] = [
     reference: "context7 /zama-ai/fhevm topic=acl",
   },
   {
-    name: "relayer-sdk-bundle-import",
+    name: "relayer-sdk-init-undefined",
     label: "TypeError: Cannot read properties of undefined (reading 'initSDK')",
     pattern: /Cannot read propert(y|ies) of undefined \(reading ['\"]initSDK['\"]\)/i,
     cause:
-      "The relayer SDK was imported from the Node-only `/bundle` entry inside a browser/Vite build. The `/bundle` build does not export `initSDK`; the browser entry is `@zama-fhe/relayer-sdk/web`.",
+      "`initSDK` is undefined at call time. Two common causes: (a) the SDK is loaded as a UMD `<script>` tag and the page references `window.fhevm.initSDK` before the script finishes evaluating; (b) Server-Side Rendering (Next.js / Remix) evaluates a module that imports the SDK at top level — the WASM loader runs in the Node phase and is undefined when the client bundle re-imports.",
     fix: [
-      "Open the file containing `from \"@zama-fhe/relayer-sdk/bundle\"`.",
-      "Change the specifier to `@zama-fhe/relayer-sdk/web`.",
+      "Use the canonical browser ESM entry: `import { initSDK, createInstance, SepoliaConfig } from \"@zama-fhe/relayer-sdk/bundle\"` (or bare `@zama-fhe/relayer-sdk` if your bundler prefers ESM).",
+      "Wrap initialization in `useEffect(() => { void initSDK(); }, [])` for React, or guard with `typeof window !== \"undefined\"` for SSR frameworks.",
+      "If using Next.js: mark the file `\"use client\"` and create the SDK instance inside a Client Component.",
       "Restart the dev server so Vite/Webpack re-resolves the entry.",
       "$ rm -rf node_modules/.vite && npm run dev",
     ],
     reference:
-      "https://docs.zama.ai/protocol/relayer-sdk/web-vs-bundle",
+      "https://docs.zama.org/protocol/relayer-sdk-guides/fhevm-relayer/initialization",
   },
   {
     name: "deprecated-fhevmjs",
@@ -67,7 +68,7 @@ export const PATTERNS: DebugPattern[] = [
     fix: [
       "$ npm uninstall fhevmjs",
       "$ npm install @zama-fhe/relayer-sdk@^0.4.2",
-      "Replace every `import ... from \"fhevmjs\"` with `import ... from \"@zama-fhe/relayer-sdk/web\"` (browser) or `/node` (Node).",
+      "Replace every `import ... from \"fhevmjs\"` with `import ... from \"@zama-fhe/relayer-sdk/bundle\"` (browser) or `/node` (Node).",
       "Re-check call sites — the API surface changed (e.g., `createInstance` signature).",
     ],
     reference: "https://www.npmjs.com/package/fhevmjs (deprecated)",
@@ -137,10 +138,10 @@ export const PATTERNS: DebugPattern[] = [
     label: "Relayer 502 / timeout / network error",
     pattern: /(relayer[^\n]*(502|504|timeout|ETIMEDOUT|ECONNRESET|fetch failed))/i,
     cause:
-      "The Zama relayer at `https://relayer.testnet.zama.cloud` is transiently unreachable. This is almost always upstream — verify status, then retry with exponential backoff. If persistent, your network may be blocking the relayer host.",
+      "The Zama relayer at `https://relayer.testnet.zama.org` is transiently unreachable. This is almost always upstream — verify status, then retry with exponential backoff. If persistent, your network may be blocking the relayer host.",
     fix: [
       "Check the Zama status page or the #protocol-status channel in Zama's Discord.",
-      "$ curl -I https://relayer.testnet.zama.cloud/health",
+      "$ curl -I https://relayer.testnet.zama.org/health",
       "Retry the failing call after 30s; the SDK retries internally only once.",
       "If the user is on a corporate / restrictive network, suggest a different network or VPN.",
     ],
@@ -189,6 +190,37 @@ export const PATTERNS: DebugPattern[] = [
       "Hard-refresh the frontend after redeploy to bust the stale chunk.",
     ],
     reference: "context7 /zama-ai/fhevm topic=frontend + viem ABI shape docs",
+  },
+  {
+    name: "relayer-sdk-eip712-type-mismatch",
+    label: "InvalidTypeError UintNumber / EIP-712 sign during userDecrypt",
+    pattern: /(InvalidTypeError[^\n]*UintNumber|EIP[- ]712[^\n]*Invalid signature|userDecrypt[^\n]*Invalid (signature|type))/i,
+    cause:
+      "`@zama-fhe/relayer-sdk@0.4.x` validates `startTimestamp` and `durationDays` with a zod schema. Different doc snippets show numbers in some examples and strings in others; if the type passed at runtime doesn't match the build's schema, the SDK throws before signing. Common causes: (a) a JSON.parse round-trip that converts numbers to strings, (b) copying `Math.floor(Date.now()/1000).toString()` into a build that expects numbers, or (c) the inverse.",
+    fix: [
+      "Coerce both fields explicitly before calling `instance.createEIP712()` and `instance.userDecrypt()`. The defensive shape that works against both behaviours:",
+      "  const startTimestamp = Math.floor(Date.now() / 1000); // number",
+      "  const durationDays = 10;                              // number",
+      "If you still see InvalidTypeError, swap to strings:",
+      "  const startTimestamp = String(Math.floor(Date.now() / 1000));",
+      "  const durationDays = '10';",
+      "Always strip the `0x` prefix from the EIP-712 signature before passing to `userDecrypt`: `signature.replace(/^0x/, '')`.",
+      "Reference: https://docs.zama.org/protocol/relayer-sdk-guides/fhevm-relayer/decryption/user-decryption",
+    ],
+    reference: "https://docs.zama.org/protocol/relayer-sdk-guides/fhevm-relayer/decryption/user-decryption",
+  },
+  {
+    name: "kms-public-key-mismatch",
+    label: "createInstance / userDecrypt: 'Invalid public or private key'",
+    pattern: /(Invalid (public|private) key|KMS[^\n]*key (mismatch|not found)|relayer.*decrypt.*403)/i,
+    cause:
+      "The relayer / KMS returned a key your client wasn't expecting. Two common roots: (a) the wallet is on a chain that isn't Sepolia (chainId 11155111) — the SDK pulled the wrong KMS public key; (b) `useFhevmInstance()` was created against a non-Sepolia network earlier in the session and the cache wasn't invalidated when you switched chains.",
+    fix: [
+      "Verify chain in DevTools console: `window.ethereum.request({ method: 'eth_chainId' })` — expect `'0xaa36a7'` (= 11155111).",
+      "If you switched chains mid-session, hard-reload (Ctrl+Shift+R) so the singleton resets, or call `__resetFhevmInstance()` (exported by `fhe-wagmi.ts`).",
+      "If the chain is correct, ensure your `createInstance({...SepoliaConfig, network})` is on a fresh `walletClient` from the active chain (wagmi `useWalletClient()` switches when chain changes).",
+    ],
+    reference: "https://docs.zama.org/protocol/relayer-sdk-guides/fhevm-relayer/initialization",
   },
   {
     name: "zama-config-not-found",

@@ -15,10 +15,13 @@ dotenv.config({ path: "../../.env" });
 // MNEMONIC. Throwing at config load time gives a pointed error — passing
 // `accounts: []` is technically valid hardhat config but produces an
 // opaque "no signer for sepolia" failure at deploy time.
+// Detect `--network sepolia` precisely. The earlier shape `argv.includes("sepolia")`
+// false-positives on script names containing the literal "sepolia"; pin to the
+// argument that follows the explicit `--network` flag.
+const networkFlagIdx = process.argv.indexOf("--network");
 const isSepoliaTarget =
-  process.argv.includes("sepolia") ||
-  process.argv.includes("--network") &&
-    process.argv[process.argv.indexOf("--network") + 1] === "sepolia";
+  networkFlagIdx !== -1 &&
+  process.argv[networkFlagIdx + 1] === "sepolia";
 
 if (isSepoliaTarget && !process.env.MNEMONIC) {
   throw new Error(

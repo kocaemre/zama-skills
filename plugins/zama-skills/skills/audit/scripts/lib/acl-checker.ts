@@ -134,24 +134,46 @@ export function checkAcl(file: string, source: string): Finding[] {
       const r = retRe.exec(line);
       if (r) {
         const expr = r[2] as string;
-        // Look back up to 10 lines for `FHE.allow(<expr>, msg.sender)`
+        // Look back up to 10 lines for `FHE.allow(<expr>, <any-address>)`.
+        // Valid contracts may grant to msg.sender OR a specific recipient
+        // (auction beneficiary, escrow target). A missing grant entirely is
+        // the CRITICAL bug. If at least one grant exists but none target
+        // msg.sender, downgrade to WARNING ("confirm intended recipient");
+        // if any grant targets msg.sender, the function is fine.
         const lookback = lines
           .slice(Math.max(0, i - 10), i)
           .filter((l) => !/^\s*(?:\/\/|\*|\/\*)/.test(l))
           .join("\n");
         const escExpr = expr.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const allowRe = new RegExp(
-          `FHE\\.allow\\(\\s*${escExpr}\\s*,\\s*msg\\.sender\\s*\\)`,
+        const allowAnyRe = new RegExp(
+          `FHE\\.allow\\(\\s*${escExpr}\\s*,\\s*([^)]+?)\\s*\\)`,
+          "g",
         );
-        if (!allowRe.test(lookback)) {
+        const grants: string[] = [];
+        let am: RegExpExecArray | null;
+        while ((am = allowAnyRe.exec(lookback)) !== null) {
+          grants.push((am[1] ?? "").trim());
+        }
+        if (grants.length === 0) {
           findings.push({
             file,
             line: i + 1,
             severity: "CRITICAL",
             category: "ACL",
             rule: "acl-missing-allow-return",
-            message: `Encrypted value \`${expr}\` is returned without \`FHE.allow(${expr}, msg.sender)\`. Caller will not be able to decrypt.`,
-            suggestion: `Add \`FHE.allow(${expr}, msg.sender);\` (note: requires non-view function) on the line above \`return ${expr};\`.`,
+            message: `Encrypted value \`${expr}\` is returned without any \`FHE.allow(${expr}, ...)\`. No caller will be able to decrypt.`,
+            suggestion: `Add \`FHE.allow(${expr}, msg.sender);\` (or the intended recipient address) before \`return ${expr};\`. Note: this requires a non-view function.`,
+            snippet: line.trim(),
+          });
+        } else if (!grants.some((g) => /msg\.sender/.test(g))) {
+          findings.push({
+            file,
+            line: i + 1,
+            severity: "WARNING",
+            category: "ACL",
+            rule: "acl-allow-non-sender",
+            message: `Encrypted value \`${expr}\` is returned with \`FHE.allow\` granted to ${grants.map((g) => `\`${g}\``).join(", ")} but not to \`msg.sender\`. This is valid for some patterns (auction beneficiary, escrow recipient) — confirm the intended recipient.`,
+            suggestion: `If the caller should be able to decrypt the return value, also add \`FHE.allow(${expr}, msg.sender);\`.`,
             snippet: line.trim(),
           });
         }

@@ -87,7 +87,7 @@ Run `/zama-doctor` — it lists every required and recommended MCP/tool with ins
 | MCP | `context7` MCP server installed (`claude mcp list \| grep context7`) | ✅ required |
 | MCP | `magic` (21st.dev) MCP server installed | ⚪ recommended |
 | Network | Sepolia public RPC reachable (one of the public endpoints) | ⚪ recommended (only needed for `/zama-deploy`) |
-| Network | Zama relayer reachable (`https://relayer.testnet.zama.cloud`) | ⚪ recommended (only needed for `/zama-frontend` integration tests) |
+| Network | Zama relayer reachable (`https://relayer.testnet.zama.org`) | ⚪ recommended (only needed for `/zama-frontend` integration tests) |
 | Plugin | `zama-skills` plugin installed in Claude Code | ⚪ informational |
 | Project | Current dir has `package.json` (would `/zama-init` overwrite something?) | ⚪ informational |
 

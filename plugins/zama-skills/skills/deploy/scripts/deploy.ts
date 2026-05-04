@@ -30,10 +30,8 @@ import { fileURLToPath } from "node:url";
 import { validateEnv, parseDotenv } from "./lib/env-validate.js";
 import { runPreflight } from "./lib/preflight.js";
 import { exportAbi } from "./lib/abi-export.js";
-import {
-  REGISTRY_URL,
-  getSepoliaAddresses,
-} from "./lib/sepolia-addresses.js";
+// sepolia-addresses re-export kept for the skill body / doctor — not used at deploy time
+// in v0.1.7 (registry registration is now manual; see Step 5 comment below).
 
 export interface RunDeployOptions {
   contract: string;
@@ -65,7 +63,7 @@ export interface RunDeployResult {
 
 const DEPLOY_LINE = /Deployed at:\s*(0x[a-fA-F0-9]{40})/;
 const TX_LINE = /(?:Tx|tx|Transaction|transaction)(?:\s*hash)?:\s*(0x[a-fA-F0-9]{64})/;
-const REGISTRY_TX_LINE = /Registered\s+tx:\s*(0x[a-fA-F0-9]{64})/;
+// REGISTRY_TX_LINE removed — automated registration disabled in v0.1.7.
 
 function defaultExec(cmd: string, opts?: { cwd?: string }): string {
   return execSync(cmd, {
@@ -115,15 +113,17 @@ function formatSummary(args: {
   const verifyLine = args.verifySkipped
     ? `- Verify: skipped (${args.verifySkipped})\n`
     : "";
+  // No automated registration in v0.1.7 — see deploy.ts Step 5 comment.
+  // ERC7984 contracts get a manual-registration hint; non-ERC7984 silent.
   const registryLine = args.registrySkipped
-    ? "- Skipped:    contract is not ERC7984"
-    : `- Registered: https://sepolia.etherscan.io/tx/${args.registryTxHash ?? "<pending>"}`;
+    ? "- Not applicable: contract is not ERC7984"
+    : "- Manual registration: ERC7984 tokens are discoverable through the Zama developer program. See https://docs.zama.org/protocol/community/programs and the project Discord for the current registration flow.";
   const txLine = args.txHash
     ? `- Tx:         https://sepolia.etherscan.io/tx/${args.txHash}\n`
     : "";
 
   return [
-    "## ✅ /zama-skills:deploy complete",
+    "## /zama-deploy complete",
     "",
     "### Deployed",
     `- Contract:   ${args.name}`,
@@ -235,35 +235,14 @@ export async function runDeploy(
   }
 
   // ── Step 5 — Confidential Token Registry registration ─────────────────
-  let registryTxHash: string | undefined;
+  // As of 2026-05 there is NO generic ConfidentialTokenRegistry on Sepolia.
+  // The protocol-apps page lists only a "Wrappers Registry" (for confidential
+  // ERC-20 wrappers) at 0x2f0750…  Generic confidential token discovery is
+  // done through the Zama developer program / discord. We surface this in
+  // the closing summary instead of attempting an automated call.
+  const registryTxHash: string | undefined = undefined;
   const isErc7984 = detectErc7984(root, opts.contract);
-  if (isErc7984) {
-    try {
-      const addrs = await getSepoliaAddresses({
-        cacheDir: join(root, ".cache"),
-        ...(opts.fetcher ? { fetcher: opts.fetcher } : {}),
-      });
-      const registryAddress = addrs.ConfidentialTokenRegistry;
-      if (!registryAddress) {
-        return {
-          ok: false,
-          address,
-          error: `sepolia-addresses: ConfidentialTokenRegistry missing in fetched registry. Check ${REGISTRY_URL}.`,
-        };
-      }
-      const out = exec(
-        `ZAMA_TOKEN_REGISTRY=${registryAddress} ZAMA_TOKEN_ADDRESS=${address} pnpm hardhat run --network sepolia scripts/register-token.ts`,
-        { cwd: wsCwd },
-      );
-      registryTxHash = out.match(REGISTRY_TX_LINE)?.[1];
-    } catch (e) {
-      return {
-        ok: false,
-        address,
-        error: `registry registration failed: ${e instanceof Error ? e.message : String(e)}`,
-      };
-    }
-  }
+  void isErc7984; // kept for closing-summary signal (registrySkipped flag below)
 
   // ── Step 6 — ABI export ───────────────────────────────────────────────
   let abiPath: string;

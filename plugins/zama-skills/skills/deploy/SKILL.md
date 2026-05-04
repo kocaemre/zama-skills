@@ -241,7 +241,7 @@ Use the env-var convention from `fhevm-hardhat-template`:
 
 ## Relayer URL
 
-Confirm the **current relayer URL** via context7 `/zama-ai/fhevm` `topic: "relayer"` before emitting any relayer-sdk init code. The URL has historically been `https://relayer.testnet.zama.cloud` but treat it as runtime-fetched, not source-pinned.
+Confirm the **current relayer URL** via context7 `/zama-ai/fhevm` `topic: "relayer"` before emitting any relayer-sdk init code. The URL has historically been `https://relayer.testnet.zama.org` but treat it as runtime-fetched, not source-pinned.
 
 ## Hard rule
 

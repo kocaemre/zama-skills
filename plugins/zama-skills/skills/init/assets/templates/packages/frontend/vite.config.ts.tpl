@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// @zama-fhe/relayer-sdk/web uses WebAssembly threads → SharedArrayBuffer →
+// @zama-fhe/relayer-sdk/bundle uses WebAssembly threads → SharedArrayBuffer →
 // requires Cross-Origin Isolation. Without these headers initSDK() fails
 // silently and every downstream getFhevmInstance() call throws "no cached
 // instance" / "Invalid public or private key".

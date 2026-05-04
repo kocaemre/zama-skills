@@ -3,7 +3,7 @@
 // fhEVM relayer-sdk singleton — uses @zama-fhe/relayer-sdk per pinned-versions.json.
 // (The legacy frontend package was deprecated 2025-07-10; do not reintroduce it.)
 
-import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/web";
+import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/bundle";
 
 declare global {
   interface Window {

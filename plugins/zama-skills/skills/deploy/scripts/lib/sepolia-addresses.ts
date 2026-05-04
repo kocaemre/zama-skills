@@ -2,7 +2,7 @@
  * sepolia-addresses.ts — WebFetch-backed Zama Sepolia address registry
  * with a 24-hour file cache (DEPLOY-03).
  *
- * Source: https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia
+ * Source: https://docs.zama.org/protocol/solidity-guides/smart-contract/configure/contract_addresses
  *
  * The actual WebFetch call belongs to the skill body (Claude). This
  * module exposes:
@@ -12,6 +12,13 @@
  *     is injected so unit tests don't hit the network.
  *
  * Hard rule: NO Sepolia address is ever pinned in this file's source.
+ *
+ * Confidential Token Registry: as of 2026-05 there is NO generic
+ * ConfidentialTokenRegistry on Sepolia. The protocol-apps page lists
+ * a "Wrappers Registry" (0x2f0750…) which is for confidential ERC-20
+ * wrappers only. Generic confidential token registration is manual via
+ * the Zama developer program / discord. Step 5 of /zama-deploy is
+ * therefore advisory rather than automated — see deploy/SKILL.md.
  */
 
 import {
@@ -29,8 +36,11 @@ export interface Addresses {
   KMSVerifier?: string;
   InputVerifier?: string;
   FHEVMExecutor?: string;
+  HCULimit?: string;
   DecryptionOracle?: string;
-  ConfidentialTokenRegistry?: string;
+  InputVerification?: string;
+  RelayerUrl?: string;
+  GatewayChainId?: string;
 }
 
 export interface CacheShape {
@@ -50,32 +60,51 @@ export interface GetOptions {
 }
 
 export const REGISTRY_URL =
-  "https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia";
+  "https://docs.zama.org/protocol/solidity-guides/smart-contract/configure/contract_addresses";
 
-const LABELS: ReadonlyArray<keyof Addresses> = [
-  "ACL",
-  "KMSVerifier",
-  "InputVerifier",
-  "FHEVMExecutor",
-  "DecryptionOracle",
-  "ConfidentialTokenRegistry",
+/**
+ * Map from {AddressKey → upstream label name on docs.zama.org}.
+ * Upstream labels follow the pattern <NAME>_CONTRACT or <NAME>_ADDRESS.
+ * RELAYER_URL and GATEWAY_CHAIN_ID are not 0x addresses but live on the
+ * same page and matter for deploy-time config.
+ */
+const LABEL_MAP: ReadonlyArray<{ key: keyof Addresses; upstream: string; isAddress: boolean }> = [
+  { key: "ACL",                upstream: "ACL_CONTRACT",                isAddress: true  },
+  { key: "FHEVMExecutor",      upstream: "FHEVM_EXECUTOR_CONTRACT",     isAddress: true  },
+  { key: "HCULimit",           upstream: "HCU_LIMIT_CONTRACT",          isAddress: true  },
+  { key: "KMSVerifier",        upstream: "KMS_VERIFIER_CONTRACT",       isAddress: true  },
+  { key: "InputVerifier",      upstream: "INPUT_VERIFIER_CONTRACT",     isAddress: true  },
+  { key: "DecryptionOracle",   upstream: "DECRYPTION_ADDRESS",          isAddress: true  },
+  { key: "InputVerification",  upstream: "INPUT_VERIFICATION_ADDRESS",  isAddress: true  },
+  { key: "RelayerUrl",         upstream: "RELAYER_URL",                 isAddress: false },
+  { key: "GatewayChainId",     upstream: "GATEWAY_CHAIN_ID",            isAddress: false },
 ];
 
 const HEX = /0x[a-fA-F0-9]{40}/;
+const URL_RE = /https?:\/\/[^\s<"'`)]+/;
+const NUM_RE = /\b\d{2,}\b/;
 
 /**
- * Pure parser. For each known label, find its first occurrence in the
- * HTML and capture the next `0x[40 hex]` address that follows within
- * a reasonable window (1024 chars). Resilient to extra markup.
+ * Pure parser. For each known upstream label, find its first occurrence
+ * in the HTML and capture the next address / URL / chain id that follows
+ * within a reasonable window (1024 chars). Resilient to extra markup.
  */
 export function parseAddressesFromHtml(html: string): Addresses {
   const out: Addresses = {};
-  for (const label of LABELS) {
-    const labelIdx = html.indexOf(label);
+  for (const { key, upstream, isAddress } of LABEL_MAP) {
+    const labelIdx = html.indexOf(upstream);
     if (labelIdx < 0) continue;
     const window = html.slice(labelIdx, labelIdx + 1024);
-    const m = window.match(HEX);
-    if (m) out[label] = m[0];
+    if (isAddress) {
+      const m = window.match(HEX);
+      if (m) out[key] = m[0];
+    } else if (key === "RelayerUrl") {
+      const m = window.match(URL_RE);
+      if (m) out[key] = m[0];
+    } else if (key === "GatewayChainId") {
+      const m = window.match(NUM_RE);
+      if (m) out[key] = m[0];
+    }
   }
   return out;
 }
@@ -138,9 +167,14 @@ export async function getSepoliaAddresses(
   }
 
   const addresses = parseAddressesFromHtml(html);
-  if (!addresses.ACL || !addresses.ConfidentialTokenRegistry) {
+  // Required minimum: ACL + KMSVerifier + RelayerUrl. Without these no FHE
+  // operation works on Sepolia. Other entries are nice-to-have.
+  const missing = (
+    ["ACL", "KMSVerifier", "RelayerUrl"] as Array<keyof Addresses>
+  ).filter((k) => !addresses[k]);
+  if (missing.length > 0) {
     throw new Error(
-      `Zama Sepolia address registry parse failed: required labels missing in fetched HTML. ` +
+      `Zama Sepolia address registry parse failed: missing ${missing.join(", ")}. ` +
         `The docs page format may have changed — check ${REGISTRY_URL}.`,
     );
   }

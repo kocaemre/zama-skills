@@ -50,7 +50,7 @@ Required env vars in `packages/frontend/.env.local`:
 | --- | --- |
 | `NEXT_PUBLIC_CONTRACT_ADDRESS` | `0x04Bd105DE7a5D3297c3747cef90ac8b760136896` (already pre-filled) |
 | `NEXT_PUBLIC_SEPOLIA_RPC` | Alchemy / Infura / `https://ethereum-sepolia.publicnode.com` |
-| `NEXT_PUBLIC_RELAYER_URL` | `https://relayer.testnet.zama.cloud` (already pre-filled) |
+| `NEXT_PUBLIC_RELAYER_URL` | `https://relayer.testnet.zama.org` (already pre-filled) |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | [cloud.walletconnect.com](https://cloud.walletconnect.com) |
 
 ## Deploy your own to Vercel

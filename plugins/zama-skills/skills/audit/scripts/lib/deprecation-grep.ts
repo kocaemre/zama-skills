@@ -99,8 +99,8 @@ export function checkDeprecations(
         rule: `deprecated-import-${dep.pkg}`,
         message: `Deprecated package \`${dep.pkg}\` imported. ${dep.notes}`,
         suggestion: file.endsWith(".sol")
-          ? `Replace with: import {FHE, euint64, ebool} from "${dep.replacement}/lib/FHE.sol";  (run: forge remove ${dep.pkg} && forge install ${dep.replacement})`
-          : `Replace with: import { ... } from "${dep.replacement}";  (run: npm uninstall ${dep.pkg} && npm install ${dep.replacement})`,
+          ? `Replace with: import {FHE, euint64, ebool} from "${dep.replacement}/lib/FHE.sol";  (run: pnpm remove ${dep.pkg} && pnpm add ${dep.replacement})`
+          : `Replace with: import { ... } from "${dep.replacement}";  (run: pnpm remove ${dep.pkg} && pnpm add ${dep.replacement})`,
         snippet: line.trim(),
       });
     }

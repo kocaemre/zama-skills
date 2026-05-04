@@ -6,7 +6,7 @@
 
 **Built for:** [Zama Developer Program — Mainnet Season 2 / Bounty Track](https://docs.zama.org/protocol/community/programs).
 
-**Differentiator:** Every generated line is verified live against official Zama documentation via [context7](https://github.com/upstash/context7) MCP — `/zama-ai/fhevm` (1,772 snippets), `/zama-ai/fhevm-hardhat-template`, `/websites/openzeppelin_confidential-contracts`. **Zero hallucinated APIs.**
+**Differentiator:** Every code-generating skill (`/zama-contract`, `/zama-test`, `/zama-frontend`, `/zama-audit`, `/zama-debug`) queries [context7](https://github.com/upstash/context7) MCP for live Zama documentation before emitting code — `/zama-ai/fhevm` (1,772 snippets), `/zama-ai/fhevm-hardhat-template`, `/websites/openzeppelin_confidential-contracts`. APIs are checked against current docs, not the model's training cut-off, so deprecated packages and renamed symbols don't slip through.
 
 ## Prerequisites
 
@@ -309,7 +309,7 @@ After installing the plugin, jump straight to the path that matches your goal. E
 /zama-autonomous
 ```
 
-Runs the full pipeline (design → init → contract → test → audit → deploy → frontend) in sequence. Pauses only at safety gates: design review, audit findings, the manual deploy confirmation, and final smoke. Resumable — if you stop or hit an error, re-run with `--resume` and it picks up where it left off.
+Runs the full pipeline (design → init → contract → test → audit → deploy → frontend) in sequence. Pauses only at safety gates: design review, audit findings, the manual deploy confirmation, and final smoke. Resumable — if you stop or hit an error, re-run `/zama-autonomous` and it asks whether to resume from the saved step or start fresh.
 
 State lives at `.planning/v1-autonomous/state.json` (no secrets, just step progress). Run `/zama-doctor` first if you're not sure your environment is ready.
 
@@ -387,7 +387,7 @@ Produces `DESIGN.md` (contract architecture + ACL strategy per actor + decryptio
 | `/zama-audit` | "audit this contract", "check FHE bugs", post-`/zama-contract` review | Scans Solidity + TS for ACL gaps, cleartext leaks (require/event), HCU explosions (>12 FHE ops/fn), deprecated imports — exits 0/1/2 for CI |
 | `/zama-debug` | "I got an FHE error", paste a stack trace | Matches your error against a 10+ pattern catalog (ACL revert, `initSDK undefined`, deprecated imports, HCU exceeded, SSR `indexedDB`, etc.) — returns root cause + fix command |
 | `/zama-doctor` | "check zama setup", "what's missing", first-time install verification | Read-only diagnostic — checks Node, pnpm, git, `context7` MCP (required), `magic` MCP (recommended), Sepolia RPC reachability, plugin install status. Prints fix commands for whatever is missing. |
-| `/zama-autonomous` | "do everything", "full pipeline", "build me a confidential dApp", first-time users | One-command orchestrator — runs design → init → contract → test → audit → deploy → frontend in sequence. Pauses at safety gates (design review, audit findings, manual deploy). Resumable via `--resume`. State at `.planning/v1-autonomous/state.json`. |
+| `/zama-autonomous` | "do everything", "full pipeline", "build me a confidential dApp", first-time users | One-command orchestrator — runs design → init → contract → test → audit → deploy → frontend in sequence. Pauses at safety gates (design review, audit findings, manual deploy). Re-running `/zama-autonomous` after an interruption prompts you to resume from the saved step. State at `.planning/v1-autonomous/state.json`. |
 
 `/zama-deploy` has `disable-model-invocation: true` — Claude **will not** auto-deploy on its own. You must invoke it explicitly.
 

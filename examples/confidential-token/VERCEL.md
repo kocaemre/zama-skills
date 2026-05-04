@@ -40,7 +40,7 @@ Under **Environment Variables**, add the four `NEXT_PUBLIC_*` variables. All fou
 | --- | --- | --- |
 | `NEXT_PUBLIC_CONTRACT_ADDRESS` | `0x04Bd105DE7a5D3297c3747cef90ac8b760136896` | Live cDEMO contract on Sepolia (from `packages/contracts/deployments/sepolia/Token.json`) |
 | `NEXT_PUBLIC_SEPOLIA_RPC` | `https://ethereum-sepolia.publicnode.com` | Or your Alchemy/Infura URL. Public alternatives: `https://1rpc.io/sepolia`, `https://rpc.sepolia.org` |
-| `NEXT_PUBLIC_RELAYER_URL` | `https://relayer.testnet.zama.cloud` | Zama Sepolia relayer. Verify against [docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia](https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia) periodically |
+| `NEXT_PUBLIC_RELAYER_URL` | `https://relayer.testnet.zama.org` | Zama Sepolia relayer. Verify against [docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia](https://docs.zama.org/protocol/protocol-apps/addresses/testnet/sepolia) periodically |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | *(your project ID)* | Get one at [cloud.walletconnect.com](https://cloud.walletconnect.com) — required by RainbowKit |
 
 Apply each variable to all three environments: **Production**, **Preview**, **Development**.
@@ -78,7 +78,7 @@ Commit those changes — they're the final step that makes EXAMPLE-03 fully met.
 | Build fails at `next build` with `Module not found` | pnpm workspace not detected | Set **Install Command** to `cd ../../.. && pnpm install --filter @confidential-token/frontend...` |
 | "Failed to fetch" in browser console | `NEXT_PUBLIC_SEPOLIA_RPC` empty or rate-limited | Switch to a different public RPC or get an Alchemy key |
 | WalletConnect modal won't open | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` empty or wrong | Re-check the value in Vercel env vars, redeploy |
-| Decrypt hangs in `relayer-pending` forever | `NEXT_PUBLIC_RELAYER_URL` wrong, or contract ACL not granted | Confirm value is `https://relayer.testnet.zama.cloud`; check contract calls `FHE.allowThis` after every state write |
+| Decrypt hangs in `relayer-pending` forever | `NEXT_PUBLIC_RELAYER_URL` wrong, or contract ACL not granted | Confirm value is `https://relayer.testnet.zama.org`; check contract calls `FHE.allowThis` after every state write |
 | Tx reverts on Sepolia | Out of gas or stale relayer key set | Top up Sepolia ETH; redeploy contract if relayer keys rotated |
 
 ## Why Vercel binding is a manual step

@@ -62,14 +62,17 @@ printf "\n%sMCP servers%s\n" "$BOLD" "$NC"
 
 if command -v claude >/dev/null 2>&1; then
   MCP_LIST=$(claude mcp list 2>/dev/null || true)
-  if echo "$MCP_LIST" | grep -qiE "(^|[[:space:]])context7([[:space:]]|$)"; then
+  # `claude mcp list` outputs entries like `context7: npx -y @upstash/...` —
+  # match the server name as the first non-blank token on a line, optionally
+  # followed by ":", "─", whitespace, or EOL.
+  if echo "$MCP_LIST" | grep -qiE '^[[:space:]]*context7([[:space:]:─-]|$)'; then
     ok "context7 MCP installed"
   else
     fail_r "context7 MCP not installed"
     hint "claude mcp add context7 -- npx -y @upstash/context7-mcp"
   fi
 
-  if echo "$MCP_LIST" | grep -qiE "(^|[[:space:]])magic([[:space:]]|$)"; then
+  if echo "$MCP_LIST" | grep -qiE '^[[:space:]]*magic([[:space:]:─-]|$)'; then
     ok "magic MCP installed (21st.dev components)"
   else
     fail_o "magic MCP not installed (recommended for /zama-frontend, /zama-design)"
@@ -99,7 +102,7 @@ if [ "$SEPOLIA_OK" -eq 0 ]; then
 fi
 
 if curl -sS --max-time 4 -o /dev/null -w "%{http_code}" \
-    https://relayer.testnet.zama.cloud 2>/dev/null | grep -qE "^(200|301|302|404|405)$"; then
+    https://relayer.testnet.zama.org 2>/dev/null | grep -qE "^(200|301|302|404|405)$"; then
   ok "Zama relayer endpoint reachable"
 else
   fail_o "Zama relayer not reachable (only needed for /zama-frontend round-trip tests)"
@@ -127,6 +130,30 @@ if [ -f package.json ]; then
   warn "package.json present (project: $PKG_NAME) — /zama-init would NOT scaffold here. cd to an empty dir first."
 else
   ok "no package.json — /zama-init can scaffold here"
+fi
+
+# ---- .env (deploy-time required vars; advisory at doctor time) ----
+printf "\n%sEnvironment variables (.env)%s\n" "$BOLD" "$NC"
+
+ENV_FILE=""
+if   [ -f .env ];                    then ENV_FILE=".env"
+elif [ -f .env.deploy.local ];       then ENV_FILE=".env.deploy.local"
+elif [ -f packages/contracts/.env ]; then ENV_FILE="packages/contracts/.env"
+fi
+
+if [ -n "$ENV_FILE" ]; then
+  ok ".env file found: $ENV_FILE"
+  for KEY in INFURA_API_KEY MNEMONIC ETHERSCAN_API_KEY; do
+    # match KEY= followed by anything non-blank (treats KEY= alone as missing)
+    if grep -qE "^${KEY}=.+\$" "$ENV_FILE"; then
+      ok "  $KEY set"
+    else
+      fail_o "  $KEY missing or empty in $ENV_FILE (needed by /zama-deploy)"
+    fi
+  done
+else
+  fail_o ".env not found (needed by /zama-deploy — copy from .env.example after /zama-init)"
+  hint "after /zama-init: cp .env.example .env && \$EDITOR .env"
 fi
 
 # ---- Verdict ----

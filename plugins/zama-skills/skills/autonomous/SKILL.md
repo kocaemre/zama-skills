@@ -201,7 +201,7 @@ Show the user the first ~30 lines of DESIGN.md, then ask via AskUserQuestion:
 
 - "Continue with this design?" → Yes / Edit DESIGN.md first / Cancel
 
-If "Edit": pause, tell user to edit and re-run with `--resume`.
+If "Edit": pause and tell the user to edit DESIGN.md, then re-run `/zama-autonomous` — on the next run the orchestrator detects the saved state file and asks whether to resume from the in-flight step.
 If "Cancel": exit cleanly.
 
 ### 4. `/zama-init`
@@ -242,7 +242,7 @@ Invoke audit on `packages/contracts/contracts/`. Capture exit code.
 
 - Exit 0 (clean): "Audit clean. Continuing to deploy." Update state, proceed.
 - Exit 1 (warnings): Show warnings, ask "Continue to deploy anyway? (recommended: fix first via `/zama-debug` or `/zama-contract --regenerate`)" → Yes / Stop
-- Exit 2 (critical): Show critical findings, refuse to continue. "Fix critical findings and re-run with `--resume`." Save state with `currentStep: "audit"` (so resume re-runs audit).
+- Exit 2 (critical): Show critical findings, refuse to continue. "Fix critical findings and re-run `/zama-autonomous` — it will offer to resume from the audit step." Save state with `currentStep: "audit"` (so resume re-runs audit).
 
 ### 8. `/zama-deploy` — MANUAL confirm
 

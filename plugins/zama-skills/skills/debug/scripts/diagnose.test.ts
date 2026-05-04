@@ -1,7 +1,7 @@
 /**
  * diagnose.test.ts — vitest suite for the /zama-debug pattern engine.
  *
- * One test per registered pattern (10), plus engine + CLI smoke tests, and
+ * One test per registered pattern, plus engine + CLI smoke tests, and
  * a CI cross-check that PATTERNS.md mirrors the patterns.ts catalog.
  */
 
@@ -20,9 +20,9 @@ const __dirname = dirname(__filename);
 // ---------------- patterns catalog ----------------
 
 describe("patterns catalog", () => {
-  it("registers exactly 12 patterns (extend deliberately)", () => {
-    expect(PATTERN_COUNT).toBe(12);
-    expect(PATTERNS.length).toBe(12);
+  it("registers exactly 14 patterns (extend deliberately)", () => {
+    expect(PATTERN_COUNT).toBe(14);
+    expect(PATTERNS.length).toBe(14);
   });
 
   it("each pattern has stable structure", () => {
@@ -49,8 +49,12 @@ describe("patterns catalog", () => {
 const SAMPLES: Record<string, string> = {
   "acl-not-allowed":
     "Error: VM Exception while processing transaction: reverted with reason string 'ACL: not allowed'",
-  "relayer-sdk-bundle-import":
+  "relayer-sdk-init-undefined":
     "TypeError: Cannot read properties of undefined (reading 'initSDK')\n    at app.tsx:14",
+  "relayer-sdk-eip712-type-mismatch":
+    "ZodError: InvalidTypeError — Expected UintNumber, received string at path 'startTimestamp'",
+  "kms-public-key-mismatch":
+    "Error: KMS public key mismatch — expected key for chainId 11155111, got key for chainId 1",
   "deprecated-fhevmjs":
     "Module not found: Error: Can't resolve 'fhevmjs' in '/app/src'",
   "deprecated-fhevm-root":
@@ -62,7 +66,7 @@ const SAMPLES: Record<string, string> = {
   "etherscan-v1-deprecated":
     "Error from Etherscan: V1 endpoint deprecated. Please migrate to https://api.etherscan.io/v2",
   "relayer-timeout":
-    "FetchError: relayer 502 Bad Gateway when calling https://relayer.testnet.zama.cloud/v1/decrypt",
+    "FetchError: relayer 502 Bad Gateway when calling https://relayer.testnet.zama.org/v1/decrypt",
   "wagmi-undefined-readcontract":
     "ContractFunctionExecutionError: The contract function \"balanceOf\" reverted. Function selector 0xabcdef not found on ABI.",
     "fhe-no-cached-instance":

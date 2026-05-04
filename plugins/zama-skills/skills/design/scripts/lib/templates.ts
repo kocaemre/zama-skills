@@ -56,6 +56,8 @@ export interface DesignSubstitutions {
   DECRYPTION_TABLE: string;
   FLOWS_BLOCK: string;
   INIT_USE_CASE: string;
+  USE_CASE_KEY: string;
+  CONTRACT_NAME: string;
   OPEN_QUESTIONS: string;
 }
 
@@ -455,6 +457,15 @@ function openQuestionsFor(category: Category): string {
   return generic.join("\n");
 }
 
+/** PascalCase a slug or one-liner so contract templates get a valid Solidity identifier. */
+function pascalCaseFromSlug(slug: string): string {
+  return slug
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join("");
+}
+
 export function renderDesignSubs(inputs: DesignInputs, now: Date): DesignSubstitutions {
   validateInputs(inputs);
   const rec = recommendBase(inputs.category);
@@ -463,6 +474,8 @@ export function renderDesignSubs(inputs: DesignInputs, now: Date): DesignSubstit
     ONE_LINER: inputs.oneLiner.trim(),
     SLUG: inputs.slug,
     CATEGORY: inputs.category,
+    USE_CASE_KEY: rec.initUseCase,
+    CONTRACT_NAME: pascalCaseFromSlug(inputs.slug),
     DATE: now.toISOString().slice(0, 10),
     BASE_CHOICE: rec.base,
     BASE_RATIONALE: rec.rationale,

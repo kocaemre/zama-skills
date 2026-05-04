@@ -4,13 +4,14 @@
 // rather than the EIP-1193 injected provider. Use this when your app already manages
 // wallet state via wagmi.
 
-import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/web";
+import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/bundle";
 import { useEffect, useState } from "react";
 import { useWalletClient } from "wagmi";
 
 type FhevmInstance = Awaited<ReturnType<typeof createInstance>>;
 
 let _instance: FhevmInstance | null = null;
+let _instanceChainId: number | null = null; // chain that _instance was created for
 let _initInFlight: Promise<FhevmInstance> | null = null;
 
 const SEPOLIA_CHAIN_ID = 11155111;
@@ -25,6 +26,14 @@ export async function getFhevmInstanceForClient(
   network: unknown,
   chainId?: number,
 ): Promise<FhevmInstance> {
+  // Cache invalidation: KMS keys + relayer URL are chain-specific. If the user
+  // switched chains in the wallet between the previous init and now, the cached
+  // instance is stale — drop it and re-init on the new chain.
+  if (_instance && chainId !== undefined && _instanceChainId !== chainId) {
+    _instance = null;
+    _instanceChainId = null;
+    _initInFlight = null;
+  }
   if (_instance) return _instance;
   if (_initInFlight) return _initInFlight;
 
@@ -46,6 +55,7 @@ export async function getFhevmInstanceForClient(
       network,
     });
     _instance = instance;
+    _instanceChainId = chainId ?? null;
     return instance;
   })();
 
@@ -93,5 +103,6 @@ export async function getFhevmInstance(): Promise<FhevmInstance> {
 /** For tests only — drop the cached instance. */
 export function __resetFhevmInstance(): void {
   _instance = null;
+  _instanceChainId = null;
   _initInFlight = null;
 }

@@ -241,7 +241,7 @@ Use the env-var convention from `fhevm-hardhat-template`:
 
 ## Relayer URL
 
-Confirm the **current relayer URL** via context7 `/zama-ai/fhevm` `topic: "relayer"` before emitting any relayer-sdk init code. The URL has historically been `https://relayer.testnet.zama.cloud` but treat it as runtime-fetched, not source-pinned.
+Confirm the **current relayer URL** via context7 `/zama-ai/fhevm` `topic: "relayer"` before emitting any relayer-sdk init code. The URL has historically been `https://relayer.testnet.zama.org` but treat it as runtime-fetched, not source-pinned.
 
 ## Hard rule
 
@@ -303,9 +303,23 @@ This skill scaffolds a deprecation-free, compile-green confidential dApp into `.
 
 Run `${CLAUDE_SKILL_DIR}/scripts/preflight.ts` via Bash. The script verifies Node `>=20`, `pnpm` on `PATH`, write access to the current working directory, and a lightweight context7 reachability ping. If it exits non-zero, print the helper's stderr verbatim and **STOP** — do not proceed to Step 2. Pre-flight is a hard gate; never "best-effort" past it.
 
-## Step 2 — Ask the use-case
+## Step 2 — Resolve the use-case (from DESIGN.md if present, else ask)
 
-Use the `AskUserQuestion` tool with a single-select question titled "Which confidential dApp do you want to scaffold?" and the four options below. Each option ships a one-line "what you'll get" summary so the user picks without docs lookup:
+Before prompting, check whether `DESIGN.md` exists at the repo root. If it does, **read its first 10 lines** — `/zama-design` writes a structured HTML comment block at the very top:
+
+```html
+<!-- @zama-skills:design-meta v1
+slug: ...
+category: ...
+useCase: confidential-token
+contractName: ...
+generatedAt: ...
+-->
+```
+
+If you find a valid `useCase:` value matching one of `{confidential-token, voting, auction, custom}`, **skip the question entirely** — print a one-line confirmation ("Detected DESIGN.md → use-case `confidential-token`. Proceeding.") and reuse that value as `<use-case>` for Step 3. The user already chose in `/zama-design`; re-asking is friction.
+
+If DESIGN.md is absent OR the meta block is missing/malformed, fall through to the regular `AskUserQuestion` prompt titled "Which confidential dApp do you want to scaffold?" with the four options below. Each option ships a one-line "what you'll get" summary so the user picks without docs lookup:
 
 - `confidential-token` — minimal `ERC7984ERC20Wrapper` with mint/transfer demo (uses `@openzeppelin/confidential-contracts`).
 - `voting` — `VotesConfidential` poll with confidential ballots and snapshot-based tallying.

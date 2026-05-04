@@ -96,55 +96,71 @@ describe("validateEnv", () => {
 // sepolia-addresses (parser + cache)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Mirrors the live https://docs.zama.org/protocol/solidity-guides/smart-contract/configure/contract_addresses
+// page format (snapshot 2026-05). Labels follow <NAME>_CONTRACT / <NAME>_ADDRESS.
 const SAMPLE_HTML = `
 <html><body>
-<h2>ACL</h2>
-<p>Address: <code>0x687820221192C5B662b25367F70076A37bc79b6c</code></p>
+<h2>ACL_CONTRACT</h2>
+<p>Address: <code>0xf0Ffdc93b7E186bC2f8CB3dAA75D86d1930A433D</code></p>
 
-<h2>KMSVerifier</h2>
-<p>Sepolia: 0x9D6891A6240D6130c54ae243d8005063D05fE14b</p>
+<h2>FHEVM_EXECUTOR_CONTRACT</h2>
+<code>0x92C920834Ec8941d2C77D188936E1f7A6f49c127</code>
 
-<h2>InputVerifier</h2>
-<code>0xbc91f3daD1A5F19F8390c400196e58073B6a0BC4</code>
+<h2>HCU_LIMIT_CONTRACT</h2>
+<code>0xa10998783c8CF88D886Bc30307e631D6686F0A22</code>
 
-<h2>FHEVMExecutor</h2>
-<code>0x848B0066793BcC60346Da1F49049357399B8D595</code>
+<h2>KMS_VERIFIER_CONTRACT</h2>
+<code>0xbE0E383937d564D7FF0BC3b46c51f0bF8d5C311A</code>
 
-<h2>DecryptionOracle</h2>
-<code>0xa02Cda4Ca3a71D7C46997716F4283aa851C28812</code>
+<h2>INPUT_VERIFIER_CONTRACT</h2>
+<code>0xBBC1fFCdc7C316aAAd72E807D9b0272BE8F84DA0</code>
 
-<h2>ConfidentialTokenRegistry</h2>
-<code>0x2F1F2C3D4E5F6789AbCdEf0123456789AbCdEf01</code>
+<h2>DECRYPTION_ADDRESS</h2>
+<code>0x5D8BD78e2ea6bbE41f26dFe9fdaEAa349e077478</code>
+
+<h2>INPUT_VERIFICATION_ADDRESS</h2>
+<code>0x483b9dE06E4E4C7D35CCf5837A1668487406D955</code>
+
+<h2>RELAYER_URL</h2>
+<code>https://relayer.testnet.zama.org</code>
+
+<h2>GATEWAY_CHAIN_ID</h2>
+<code>10901</code>
 </body></html>
 `;
 
 describe("parseAddressesFromHtml", () => {
-  it("extracts the 6 expected fields from sample HTML", () => {
+  it("extracts addresses + relayer URL + gateway chain id from upstream HTML", () => {
     const a = parseAddressesFromHtml(SAMPLE_HTML);
     expect(a.ACL?.toLowerCase()).toBe(
-      "0x687820221192C5B662b25367F70076A37bc79b6c".toLowerCase(),
-    );
-    expect(a.KMSVerifier?.toLowerCase()).toBe(
-      "0x9D6891A6240D6130c54ae243d8005063D05fE14b".toLowerCase(),
-    );
-    expect(a.InputVerifier?.toLowerCase()).toBe(
-      "0xbc91f3daD1A5F19F8390c400196e58073B6a0BC4".toLowerCase(),
+      "0xf0Ffdc93b7E186bC2f8CB3dAA75D86d1930A433D".toLowerCase(),
     );
     expect(a.FHEVMExecutor?.toLowerCase()).toBe(
-      "0x848B0066793BcC60346Da1F49049357399B8D595".toLowerCase(),
+      "0x92C920834Ec8941d2C77D188936E1f7A6f49c127".toLowerCase(),
+    );
+    expect(a.HCULimit?.toLowerCase()).toBe(
+      "0xa10998783c8CF88D886Bc30307e631D6686F0A22".toLowerCase(),
+    );
+    expect(a.KMSVerifier?.toLowerCase()).toBe(
+      "0xbE0E383937d564D7FF0BC3b46c51f0bF8d5C311A".toLowerCase(),
+    );
+    expect(a.InputVerifier?.toLowerCase()).toBe(
+      "0xBBC1fFCdc7C316aAAd72E807D9b0272BE8F84DA0".toLowerCase(),
     );
     expect(a.DecryptionOracle?.toLowerCase()).toBe(
-      "0xa02Cda4Ca3a71D7C46997716F4283aa851C28812".toLowerCase(),
+      "0x5D8BD78e2ea6bbE41f26dFe9fdaEAa349e077478".toLowerCase(),
     );
-    expect(a.ConfidentialTokenRegistry?.toLowerCase()).toBe(
-      "0x2F1F2C3D4E5F6789AbCdEf0123456789AbCdEf01".toLowerCase(),
+    expect(a.InputVerification?.toLowerCase()).toBe(
+      "0x483b9dE06E4E4C7D35CCf5837A1668487406D955".toLowerCase(),
     );
+    expect(a.RelayerUrl).toBe("https://relayer.testnet.zama.org");
+    expect(a.GatewayChainId).toBe("10901");
   });
 
-  it("returns empty object on HTML with no addresses", () => {
+  it("returns empty object on HTML with no labels", () => {
     const a = parseAddressesFromHtml("<html><body>nothing</body></html>");
     expect(a.ACL).toBeUndefined();
-    expect(a.ConfidentialTokenRegistry).toBeUndefined();
+    expect(a.RelayerUrl).toBeUndefined();
   });
 });
 
@@ -162,7 +178,7 @@ describe("getSepoliaAddresses (cache)", () => {
     const res = await getSepoliaAddresses({ cacheDir: dir, fetcher });
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(res.ACL?.toLowerCase()).toBe(
-      "0x687820221192C5B662b25367F70076A37bc79b6c".toLowerCase(),
+      "0xf0Ffdc93b7E186bC2f8CB3dAA75D86d1930A433D".toLowerCase(),
     );
     const cachePath = join(dir, "zama-addresses.json");
     expect(existsSync(cachePath)).toBe(true);
@@ -180,7 +196,7 @@ describe("getSepoliaAddresses (cache)", () => {
     const res2 = await getSepoliaAddresses({ cacheDir: dir, fetcher });
     expect(fetcher).not.toHaveBeenCalled();
     expect(res2.ACL?.toLowerCase()).toBe(
-      "0x687820221192C5B662b25367F70076A37bc79b6c".toLowerCase(),
+      "0xf0Ffdc93b7E186bC2f8CB3dAA75D86d1930A433D".toLowerCase(),
     );
   });
 
@@ -196,7 +212,7 @@ describe("getSepoliaAddresses (cache)", () => {
     const res = await getSepoliaAddresses({ cacheDir: dir, fetcher });
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(res.ACL?.toLowerCase()).toBe(
-      "0x687820221192C5B662b25367F70076A37bc79b6c".toLowerCase(),
+      "0xf0Ffdc93b7E186bC2f8CB3dAA75D86d1930A433D".toLowerCase(),
     );
   });
 
@@ -435,7 +451,11 @@ describe("runDeploy orchestrator", () => {
     expect(exec).not.toHaveBeenCalled();
   });
 
-  it("ERC7984 contract → Step 5 runs registration", async () => {
+  it("ERC7984 contract → Step 5 surfaces manual-registration hint (no automated call)", async () => {
+    // v0.1.7 dropped automated registry registration — there is no generic
+    // ConfidentialTokenRegistry on Sepolia (only a Wrappers Registry for
+    // confidential ERC-20 wrappers). Deploy still succeeds; the closing
+    // summary advises manual registration via the Zama developer program.
     writeFileSync(
       join(dir, "packages/contracts/contracts/Token.sol"),
       "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.27;\nimport { ERC7984 } from 'oz';\ncontract Token is ERC7984 {}",
@@ -456,9 +476,6 @@ describe("runDeploy orchestrator", () => {
       if (cmd.includes("hardhat run") && cmd.includes("scripts/deploy/")) {
         return "Deployed at: 0xdef0000000000000000000000000000000000001\n";
       }
-      if (cmd.includes("register-token")) {
-        return "Registered tx: 0x9999000000000000000000000000000000000000000000000000000000000001\n";
-      }
       return "";
     });
     const r = await runDeploy({
@@ -474,8 +491,10 @@ describe("runDeploy orchestrator", () => {
       fetcher: async () => SAMPLE_HTML,
     });
     expect(r.ok).toBe(true);
-    expect(calls.find((c) => c.includes("register-token"))).toBeDefined();
-    expect(r.registryTxHash).toBeDefined();
+    // No on-chain registration call should have been made.
+    expect(calls.find((c) => c.includes("register-token"))).toBeUndefined();
+    // Closing summary should mention manual registration.
+    expect(r.summary).toMatch(/Manual registration/i);
   });
 
   it("chainId !== 11155111 → exits at Step 0 with ABORT: not Sepolia", async () => {
