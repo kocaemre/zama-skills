@@ -61,6 +61,24 @@ npx zama-skills install --tool cursor,opencode --force
 npx zama-skills install --all --force                  # install for every supported tool
 ```
 
+### Where do the rules go? (project vs global scope)
+
+`--scope project` (default) writes under `cwd` — the rules ship with your repo, your team gets them on `git pull`. **This is the right choice for almost every tool.**
+
+`--scope personal` writes under `$HOME` — only Claude Code actually reads global rules from `~/.claude/skills/`. The other tools key off the current working directory.
+
+| Tool | Default location (`--scope project`) | `--scope personal` works? |
+|------|--------------------------------------|---------------------------|
+| **Claude Code** | `<cwd>/.claude/skills/zama-skills/` | ✅ yes — `~/.claude/skills/` is real |
+| **Cursor** | `<cwd>/.cursor/rules/zama-skills/` | ❌ project-local only |
+| **OpenCode** | `<cwd>/.opencode/rules/zama-skills/` + `<cwd>/AGENTS.md` | ❌ project-local only |
+| **Codex CLI** | `<cwd>/.codex/rules/zama-skills/` + `<cwd>/AGENTS.md` | ❌ project-local only |
+| **Aider** | `<cwd>/.aider/zama-skills/` + `<cwd>/CONVENTIONS.md` | ❌ project-local only |
+| **Continue** | `<cwd>/.continue/rules/zama-skills/` | ❌ project-local only |
+| **Generic** | `<cwd>/zama-skills-knowledge/` | ✅ either works (you wire it up) |
+
+The CLI prints a warning if you pick `--scope personal` for a tool that won't honor it. **Recommended:** keep the default `--scope project`, commit the rule files to your repo, and let your team's AI agents pick them up automatically.
+
 ## Demo
 
 <!-- @sync:demo-video -->

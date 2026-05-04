@@ -45,12 +45,16 @@ program
     } else {
       // Interactive picker.
       const detected = await detectTargets(targetRoot);
-      const choices = TARGETS.map((t) => ({
-        title: t.label + (detected.includes(t.id) ? pc.green(' (detected)') : ''),
-        description: t.description,
-        value: t.id,
-        selected: detected.includes(t.id) || t.id === 'claude-code', // default Claude Code on
-      }));
+      const choices = TARGETS.map((t) => {
+        const detectedTag = detected.includes(t.id) ? pc.green(' (detected)') : '';
+        const scopeTag = !t.supportsGlobalScope ? pc.yellow(' (project-local only)') : '';
+        return {
+          title: t.label + detectedTag + scopeTag,
+          description: t.description,
+          value: t.id,
+          selected: detected.includes(t.id) || t.id === 'claude-code',
+        };
+      });
       console.log('');
       console.log(pc.bold(pc.cyan('zama-skills installer')));
       console.log(pc.dim('Select every AI tool you want the skill rules installed for.'));
@@ -70,6 +74,26 @@ program
         process.exit(0);
       }
       targets = answer.targets as TargetId[];
+    }
+
+    // Warn if --scope personal was chosen for tools that only honor project-local rules.
+    if (scope === 'personal') {
+      const localOnly = targets
+        .map((id) => findTarget(id))
+        .filter((t) => !t.supportsGlobalScope);
+      if (localOnly.length > 0) {
+        console.log('');
+        console.log(pc.yellow('⚠ Heads-up:'));
+        for (const t of localOnly) {
+          console.log(
+            `  ${pc.yellow('•')} ${pc.bold(t.label)} reads rules from project (cwd) only — installing under $HOME will likely be ignored by ${t.label}.`,
+          );
+        }
+        console.log(
+          pc.dim(`  Files will still be written, but the tool will not pick them up. Re-run from your project root with default --scope project.`),
+        );
+        console.log('');
+      }
     }
 
     let force = opts.force;

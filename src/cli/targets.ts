@@ -46,6 +46,16 @@ export interface Target {
   /** One-line hint printed after a successful install. */
   postInstallHint: (targetRoot: string) => string;
   /**
+   * True if the tool reads from a global ($HOME) rules dir in addition to project-local.
+   * Used by the CLI to warn users that --scope personal will silently no-op for tools
+   * that only honor project-local rules.
+   *
+   * - claude-code: true (~/.claude/skills is real, picked up across all projects)
+   * - everything else: false (project-local only — Cursor / OpenCode / Codex / Aider /
+   *   Continue all key off the cwd)
+   */
+  supportsGlobalScope: boolean;
+  /**
    * Heuristic: returns true if the project at targetRoot looks like it uses this tool.
    * Used for auto-suggest in the interactive picker.
    */
@@ -63,6 +73,8 @@ const exists = async (p: string): Promise<boolean> => {
 export const TARGETS: Target[] = [
   {
     id: 'claude-code',
+
+    supportsGlobalScope: true,
     label: 'Claude Code',
     description: 'Native plugin (slash commands, auto-routing, closing-summary chain)',
     assetShape: 'bundle',
@@ -76,6 +88,8 @@ export const TARGETS: Target[] = [
   },
   {
     id: 'cursor',
+
+    supportsGlobalScope: false,
     label: 'Cursor',
     description: 'Rules under .cursor/rules/zama-skills/ — read by Cursor agents and Composer',
     assetShape: 'generic',
@@ -89,6 +103,8 @@ export const TARGETS: Target[] = [
   },
   {
     id: 'opencode',
+
+    supportsGlobalScope: false,
     label: 'OpenCode',
     description: 'Rules under .opencode/rules/zama-skills/ + AGENTS.md pointer',
     assetShape: 'generic',
@@ -102,6 +118,8 @@ export const TARGETS: Target[] = [
   },
   {
     id: 'codex',
+
+    supportsGlobalScope: false,
     label: 'Codex CLI (OpenAI)',
     description: 'AGENTS.md convention + .codex/rules/zama-skills/ for skill content',
     assetShape: 'generic',
@@ -113,6 +131,8 @@ export const TARGETS: Target[] = [
   },
   {
     id: 'aider',
+
+    supportsGlobalScope: false,
     label: 'Aider',
     description: 'Rules under .aider/zama-skills/ + CONVENTIONS.md pointer',
     assetShape: 'generic',
@@ -127,6 +147,8 @@ export const TARGETS: Target[] = [
   },
   {
     id: 'continue',
+
+    supportsGlobalScope: false,
     label: 'Continue (VS Code / JetBrains)',
     description: 'Rules under .continue/rules/zama-skills/ — read by Continue agent context',
     assetShape: 'generic',
@@ -137,6 +159,8 @@ export const TARGETS: Target[] = [
   },
   {
     id: 'generic',
+
+    supportsGlobalScope: true,
     label: 'Generic (any AI tool)',
     description: 'Drop the markdown rules under zama-skills-knowledge/ — point your tool at it',
     assetShape: 'generic',
