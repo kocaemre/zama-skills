@@ -42,8 +42,16 @@ program
     if (opts.all) {
       targets = TARGETS.map((t) => t.id);
     } else if (opts.tool) {
-      const ids = opts.tool.split(',').map((s) => s.trim()).filter(Boolean) as TargetId[];
-      // Validate every id.
+      const raw = opts.tool.split(',').map((s) => s.trim()).filter(Boolean);
+      // Defense-in-depth: charset-validate before whitelist lookup, so future refactors
+      // that interpolate the id into a path can't be exploited.
+      for (const id of raw) {
+        if (!/^[a-z][a-z0-9-]{0,31}$/.test(id)) {
+          console.error(pc.red(`invalid --tool value: ${JSON.stringify(id)} (expected lowercase kebab-case, ≤32 chars)`));
+          process.exit(1);
+        }
+      }
+      const ids = raw as TargetId[];
       for (const id of ids) findTarget(id);
       targets = ids;
     } else {

@@ -62,13 +62,13 @@
     "commander": "^12.1.0",
     "fs-extra": "^11.2.0",
     "picocolors": "^1.1.1",
-    "prompts": "^2.4.2"
+    "prompts": "^2.4.2",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.19.30",
     "@types/prompts": "^2.4.9",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^2.1.9",
     "zod": "^3.25.0"

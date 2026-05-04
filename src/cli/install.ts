@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'node:path';
-import { readdir, stat, readFile, writeFile } from 'node:fs/promises';
+import { readdir, stat, readFile, writeFile, lstat } from 'node:fs/promises';
 
 import { findTarget, type Target, type TargetId } from './targets.js';
 
@@ -88,6 +88,18 @@ async function findGenericDocs(genericRoot: string): Promise<string[]> {
 const ENTRY_BLOCK_BEGIN = '<!-- BEGIN zama-skills install pointer -->';
 const ENTRY_BLOCK_END = '<!-- END zama-skills install pointer -->';
 
+/** Marker file dropped at install time so uninstall can refuse to nuke a foreign dir of the same name. */
+const INSTALL_MARKER = '.zama-skills-installed';
+
+/** Refuse to copy symlinks. Bundled source is internal but defends against poisoned tarball / hostile fs. */
+const noSymlinkFilter = async (src: string): Promise<boolean> => {
+  try {
+    return !(await lstat(src)).isSymbolicLink();
+  } catch {
+    return false;
+  }
+};
+
 function entryBlock(rulesRelative: string): string {
   return [
     ENTRY_BLOCK_BEGIN,
@@ -105,21 +117,41 @@ function entryBlock(rulesRelative: string): string {
   ].join('\n');
 }
 
-/** Idempotent append: replaces existing block, or appends a new one. */
+function countOccurrences(haystack: string, needle: string): number {
+  let n = 0;
+  let i = 0;
+  while ((i = haystack.indexOf(needle, i)) !== -1) {
+    n += 1;
+    i += needle.length;
+  }
+  return n;
+}
+
+/** Idempotent append: replaces existing block, or appends a new one. Refuses to touch the file if multiple/malformed pointer markers are present. */
 async function appendEntryPointer(filePath: string, rulesRelative: string): Promise<void> {
   let existing = '';
   if (await fs.pathExists(filePath)) {
     existing = await readFile(filePath, 'utf8');
   }
+  const beginCount = countOccurrences(existing, ENTRY_BLOCK_BEGIN);
+  const endCount = countOccurrences(existing, ENTRY_BLOCK_END);
+  if (beginCount > 1 || endCount > 1 || beginCount !== endCount) {
+    throw new Error(
+      `${filePath}: malformed zama-skills pointer (BEGIN×${beginCount}, END×${endCount}). Refusing to write — please clean it up manually.`,
+    );
+  }
   const block = entryBlock(rulesRelative);
-  const beginIdx = existing.indexOf(ENTRY_BLOCK_BEGIN);
-  const endIdx = existing.indexOf(ENTRY_BLOCK_END);
   let next: string;
-  if (beginIdx >= 0 && endIdx > beginIdx) {
+  if (beginCount === 1) {
+    const beginIdx = existing.indexOf(ENTRY_BLOCK_BEGIN);
+    const endIdx = existing.lastIndexOf(ENTRY_BLOCK_END);
+    if (endIdx <= beginIdx) {
+      throw new Error(`${filePath}: zama-skills END marker precedes BEGIN. Refusing to write.`);
+    }
     const before = existing.slice(0, beginIdx);
     const after = existing.slice(endIdx + ENTRY_BLOCK_END.length);
     next = before + block + after.replace(/^\n+/, '');
-  } else if (existing.length === 0) {
+  } else if (existing.trim().length === 0) {
     next = `# AI agent rules\n\n${block}`;
   } else {
     next = existing.replace(/\n+$/, '') + '\n\n' + block;
@@ -141,9 +173,10 @@ async function installBundle(target: Target, opts: InstallOptions): Promise<Inst
   for (const name of skills) {
     const src = path.join(sourceRoot, name);
     const dst = path.join(dest, name);
-    await fs.copy(src, dst, { overwrite: force, errorOnExist: !force });
+    await fs.copy(src, dst, { overwrite: force, errorOnExist: !force, dereference: false, filter: noSymlinkFilter });
     written += 1;
   }
+  await writeFile(path.join(dest, INSTALL_MARKER), `${new Date().toISOString()}\n`, 'utf8');
   return { target: target.id, destDir: dest, written };
 }
 
@@ -160,7 +193,7 @@ async function installGeneric(target: Target, opts: InstallOptions): Promise<Ins
   for (const name of docs) {
     const src = path.join(genericRoot, name);
     const dst = path.join(dest, name);
-    await fs.copy(src, dst, { overwrite: force, errorOnExist: !force });
+    await fs.copy(src, dst, { overwrite: force, errorOnExist: !force, dereference: false, filter: noSymlinkFilter });
     written += 1;
   }
   // Drop a tiny README so users can hand-point any other AI at the dir.
@@ -195,6 +228,7 @@ async function installGeneric(target: Target, opts: InstallOptions): Promise<Ins
   ].join('\n');
   await writeFile(readmePath, readme, 'utf8');
   written += 1;
+  await writeFile(path.join(dest, INSTALL_MARKER), `${new Date().toISOString()}\n`, 'utf8');
   let entryPointAppended: string | undefined;
   if (target.entryPoint) {
     const ep = target.entryPoint(targetRoot);
@@ -251,16 +285,25 @@ export interface UninstallResult {
   uninstalled: UninstalledTarget[];
 }
 
-/** Strip the zama-skills pointer block from an entry point file, leaving the rest intact. */
+/** Strip the zama-skills pointer block from an entry point file, leaving the rest intact. Refuses on malformed marker counts. */
 async function stripEntryPointer(filePath: string): Promise<boolean> {
   if (!(await fs.pathExists(filePath))) return false;
   const existing = await readFile(filePath, 'utf8');
+  const beginCount = countOccurrences(existing, ENTRY_BLOCK_BEGIN);
+  const endCount = countOccurrences(existing, ENTRY_BLOCK_END);
+  if (beginCount === 0 && endCount === 0) return false;
+  if (beginCount !== 1 || endCount !== 1) {
+    throw new Error(
+      `${filePath}: malformed zama-skills pointer (BEGIN×${beginCount}, END×${endCount}). Refusing to strip — please clean it up manually.`,
+    );
+  }
   const beginIdx = existing.indexOf(ENTRY_BLOCK_BEGIN);
   const endIdx = existing.indexOf(ENTRY_BLOCK_END);
-  if (beginIdx < 0 || endIdx <= beginIdx) return false;
+  if (endIdx <= beginIdx) {
+    throw new Error(`${filePath}: zama-skills END marker precedes BEGIN. Refusing to strip.`);
+  }
   const before = existing.slice(0, beginIdx).replace(/\n+$/, '');
   const after = existing.slice(endIdx + ENTRY_BLOCK_END.length).replace(/^\n+/, '');
-  // If the file becomes nothing-but-our-scaffold ("# AI agent rules"), drop it entirely.
   const stripped = (before + (before && after ? '\n\n' : '') + after).trim();
   if (stripped === '' || stripped === '# AI agent rules') {
     await fs.remove(filePath);
@@ -279,6 +322,14 @@ export async function uninstallSkills(opts: UninstallOptions): Promise<Uninstall
     const dest = target.destDir(root);
     let removed = false;
     if (await fs.pathExists(dest)) {
+      // Refuse to nuke a directory we did not install. The marker file is dropped on every install
+      // and is the only safe signal that this dir belongs to us. Without it, abort with a clear error.
+      const markerPath = path.join(dest, INSTALL_MARKER);
+      if (!(await fs.pathExists(markerPath))) {
+        throw new Error(
+          `${dest}: not a zama-skills install (missing ${INSTALL_MARKER}). Refusing to remove a foreign directory. If this dir is genuinely a stale install, delete it manually.`,
+        );
+      }
       await fs.remove(dest);
       removed = true;
     }

@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { installSkills, destinationHasExisting } from './install.js';
+import { installSkills, uninstallSkills, destinationHasExisting } from './install.js';
+import { symlink, mkdir } from 'node:fs/promises';
 import { TARGETS, findTarget, detectTargets } from './targets.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -204,6 +205,110 @@ describe('destinationHasExisting', () => {
       targets: ['claude-code'], force: true,
     });
     expect(await destinationHasExisting(tmp, tmp, ['claude-code'])).toBe(true);
+  });
+});
+
+describe('install marker + uninstall safety', () => {
+  it('drops a .zama-skills-installed marker after install (claude-code)', async () => {
+    const r = await installSkills({
+      scope: 'project', projectRoot: tmp, homeRoot: tmp,
+      sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
+      targets: ['claude-code'], force: true,
+    });
+    expect(await fileExists(path.join(r.installed[0]!.destDir, '.zama-skills-installed'))).toBe(true);
+  });
+
+  it('drops a .zama-skills-installed marker after install (generic target)', async () => {
+    const r = await installSkills({
+      scope: 'project', projectRoot: tmp, homeRoot: tmp,
+      sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
+      targets: ['cursor'], force: true,
+    });
+    expect(await fileExists(path.join(r.installed[0]!.destDir, '.zama-skills-installed'))).toBe(true);
+  });
+
+  it('uninstall refuses to remove a foreign directory (no marker)', async () => {
+    // Create a foreign dir at the path uninstall would target.
+    const foreign = path.join(tmp, '.claude', 'skills', 'zama-skills');
+    await mkdir(foreign, { recursive: true });
+    await writeFile(path.join(foreign, 'user-notes.md'), '# my notes\n', 'utf8');
+    await expect(
+      uninstallSkills({
+        projectRoot: tmp, homeRoot: tmp,
+        targets: ['claude-code'],
+      }),
+    ).rejects.toThrow(/not a zama-skills install/);
+    // User's file must still be there.
+    expect(await fileExists(path.join(foreign, 'user-notes.md'))).toBe(true);
+  });
+
+  it('uninstall removes the dir when marker is present (round trip)', async () => {
+    const r = await installSkills({
+      scope: 'project', projectRoot: tmp, homeRoot: tmp,
+      sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
+      targets: ['claude-code'], force: true,
+    });
+    expect(await fileExists(r.installed[0]!.destDir)).toBe(true);
+    await uninstallSkills({ projectRoot: tmp, homeRoot: tmp, targets: ['claude-code'] });
+    expect(await fileExists(r.installed[0]!.destDir)).toBe(false);
+  });
+});
+
+describe('entry-pointer hardening', () => {
+  it('appendEntryPointer throws on a file with two BEGIN markers', async () => {
+    const agents = path.join(tmp, 'AGENTS.md');
+    await writeFile(
+      agents,
+      '# AI agent rules\n\n<!-- BEGIN zama-skills install pointer -->\nold A\n<!-- END zama-skills install pointer -->\n\n<!-- BEGIN zama-skills install pointer -->\nold B\n<!-- END zama-skills install pointer -->\n',
+      'utf8',
+    );
+    await expect(
+      installSkills({
+        scope: 'project', projectRoot: tmp, homeRoot: tmp,
+        sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
+        targets: ['opencode'], force: true,
+      }),
+    ).rejects.toThrow(/malformed zama-skills pointer/);
+  });
+
+  it('uninstall stripEntryPointer throws on duplicated BEGIN markers', async () => {
+    // First do a clean install.
+    await installSkills({
+      scope: 'project', projectRoot: tmp, homeRoot: tmp,
+      sourceRoot: realSourceRoot, genericRoot: realGenericRoot,
+      targets: ['opencode'], force: true,
+    });
+    // Now corrupt AGENTS.md with a duplicate marker block.
+    const agents = path.join(tmp, 'AGENTS.md');
+    const content = await readFile(agents, 'utf8');
+    await writeFile(agents, content + '\n<!-- BEGIN zama-skills install pointer -->\ndupe\n<!-- END zama-skills install pointer -->\n', 'utf8');
+    await expect(
+      uninstallSkills({ projectRoot: tmp, homeRoot: tmp, targets: ['opencode'] }),
+    ).rejects.toThrow(/malformed zama-skills pointer/);
+  });
+});
+
+describe('symlink rejection in source tree', () => {
+  it('skips symlinks when copying a generic source', async () => {
+    // Build a fake genericRoot containing a real .md and a symlinked .md → /etc/passwd
+    const fakeGeneric = path.join(tmp, 'fake-generic');
+    await mkdir(fakeGeneric, { recursive: true });
+    await writeFile(path.join(fakeGeneric, 'init.md'), '# real\n', 'utf8');
+    try {
+      await symlink('/etc/passwd', path.join(fakeGeneric, 'evil.md'));
+    } catch {
+      // symlink not supported on this fs (e.g. Windows without admin) — skip silently.
+      return;
+    }
+    const r = await installSkills({
+      scope: 'project', projectRoot: tmp, homeRoot: tmp,
+      sourceRoot: realSourceRoot, genericRoot: fakeGeneric,
+      targets: ['cursor'], force: true,
+    });
+    const dest = r.installed[0]!.destDir;
+    expect(await fileExists(path.join(dest, 'init.md'))).toBe(true);
+    // Symlink must NOT have been copied.
+    expect(await fileExists(path.join(dest, 'evil.md'))).toBe(false);
   });
 });
 
