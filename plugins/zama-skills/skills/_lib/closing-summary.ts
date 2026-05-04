@@ -17,13 +17,23 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export type Phase4Skill = "contract" | "test" | "deploy" | "frontend";
+export type Phase4Skill =
+  | "contract"
+  | "test"
+  | "deploy"
+  | "frontend"
+  | "design"
+  | "audit"
+  | "debug";
 
 const KNOWN_SKILLS: ReadonlySet<string> = new Set<Phase4Skill>([
   "contract",
   "test",
   "deploy",
   "frontend",
+  "design",
+  "audit",
+  "debug",
 ]);
 
 /** Resolve `<plugin-root>/shared/prompts/` from this module's location. */
@@ -52,7 +62,7 @@ export function renderClosingSummary(
 ): string {
   if (!KNOWN_SKILLS.has(skill)) {
     throw new Error(
-      `renderClosingSummary: unknown skill "${skill}". Expected one of: contract, test, deploy, frontend.`,
+      `renderClosingSummary: unknown skill "${skill}". Expected one of: contract, test, deploy, frontend, design, audit, debug.`,
     );
   }
 

@@ -5,8 +5,8 @@
     "name": "Emre Koca",
     "email": "emrekoca2003@gmail.com"
   },
-  "homepage": "https://github.com/<owner>/zama-skills",
-  "repository": "https://github.com/<owner>/zama-skills",
+  "homepage": "https://github.com/kocaemre/zama-skills",
+  "repository": "https://github.com/kocaemre/zama-skills",
   "license": "MIT",
   "keywords": ["zama", "fhevm", "fhe", "confidential", "ethereum", "solidity"]
 }

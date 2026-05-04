@@ -141,7 +141,7 @@ function parseFrontmatter(md: string): Record<string, unknown> {
 // Main
 // ────────────────────────────────────────────────────────────────────────────
 
-const EXPECTED_SKILLS = ['init', 'contract', 'test', 'deploy', 'frontend'] as const;
+const EXPECTED_SKILLS = ['init', 'contract', 'test', 'deploy', 'frontend', 'design', 'audit', 'debug'] as const;
 const PLUGIN_DIR = 'plugins/zama-skills';
 const SKILLS_ROOT = `${PLUGIN_DIR}/skills`;
 
@@ -601,7 +601,7 @@ async function main() {
     );
   }
 
-  // 4. All 5 SKILL.md files exist with correct invariants
+  // 4. All 8 SKILL.md files exist with correct invariants
   for (const slug of EXPECTED_SKILLS) {
     const p = path.join(SKILLS_ROOT, slug, 'SKILL.md');
     let content: string;
@@ -657,7 +657,7 @@ async function main() {
     for (const e of errors) console.error('  • ' + e);
     process.exit(1);
   }
-  console.log('✓ marketplace + plugin + 5 SKILL.md frontmatters valid');
+  console.log('✓ marketplace + plugin + 8 SKILL.md frontmatters valid');
 
   // Phase 2 SHARED-04: sync drift check (unless explicitly skipped).
   if (!skipSync) {

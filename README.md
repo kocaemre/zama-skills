@@ -38,6 +38,9 @@ npx zama-skills install
 | `/zama-skills:test` | "test fhevm", "mock encrypted input", "decrypt assertion", "sepolia integration test" | Generates mock + Sepolia integration tests with `@fhevm/hardhat-plugin`, decrypt assertions, HCU-budget warnings |
 | `/zama-skills:deploy` | manual only — explicit `/zama-skills:deploy` invocation; never auto-triggers | Deploys to Sepolia + verifies on Etherscan + auto-registers Confidential Token Registry; pulls live addresses, never pins |
 | `/zama-skills:frontend` | "fhevm frontend", "relayer sdk", "useDecrypted"; editing `src/` or `app/` in fhevm project | Wires `@zama-fhe/relayer-sdk`, `useDecrypted` hook with relayer UX states, ethers v6 + typechain, encrypted-input components |
+| `/zama-skills:design` | "fikrim var", "design my dApp", "plan a confidential auction", before any scaffolding | Reads your use-case, queries context7 against `/zama-ai/fhevm` + OZ Confidential, produces `DESIGN.md` (contract architecture + ACL strategy) and `UI-WIREFRAME.md` (component tree + 4-state UX flows) |
+| `/zama-skills:audit` | "audit this contract", "check FHE bugs", post-`/zama-contract` review | Scans Solidity + TS for ACL gaps, cleartext leaks (require/event), HCU explosions (>12 FHE ops/fn), deprecated imports — exits 0/1/2 for CI |
+| `/zama-skills:debug` | "I got an FHE error", paste a stack trace | Matches your error against a 10+ pattern catalog (ACL revert, `initSDK undefined`, deprecated imports, HCU exceeded, SSR `indexedDB`, etc.) — returns root cause + fix command |
 
 `/zama-skills:deploy` has `disable-model-invocation: true` — Claude **will not** auto-deploy on its own. You must invoke it explicitly.
 
@@ -71,7 +74,10 @@ plugins/zama-skills/
     ├── contract/SKILL.md             ← /zama-skills:contract
     ├── test/SKILL.md                 ← /zama-skills:test
     ├── deploy/SKILL.md               ← /zama-skills:deploy (manual only)
-    └── frontend/SKILL.md             ← /zama-skills:frontend
+    ├── frontend/SKILL.md             ← /zama-skills:frontend
+    ├── design/SKILL.md               ← /zama-skills:design  (plan/blueprint, v1.1)
+    ├── audit/SKILL.md                ← /zama-skills:audit   (FHE-aware code review, v1.1)
+    └── debug/SKILL.md                ← /zama-skills:debug   (error → fix matcher, v1.1)
 ```
 
 The plugin is a single Claude Code marketplace at the repo root. Skill folder names drop the `zama-` prefix (the plugin namespace already supplies it) so commands read `/zama-skills:init` not `/zama-skills:zama-init`.
