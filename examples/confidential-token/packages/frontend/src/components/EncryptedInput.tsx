@@ -40,12 +40,19 @@ export interface EncryptedInputProps {
   placeholder?: string;
   /** Optional className passthrough. */
   className?: string;
+  /**
+   * Optional decimals — when set, the user's typed value is multiplied by
+   * 10^decimals before encryption. Lets a user type "15" for an ERC-20-style
+   * token whose on-chain unit is 15 * 10^decimals (raw uint64). When unset,
+   * the raw integer is encrypted as-is.
+   */
+  decimals?: number;
 }
 
 type Phase = "idle" | "encrypting" | "done" | "error";
 
 export function EncryptedInput(props: EncryptedInputProps): JSX.Element {
-  const { contractAddress, signerAddress, type, onEncrypted, placeholder, className } = props;
+  const { contractAddress, signerAddress, type, onEncrypted, placeholder, className, decimals } = props;
   const [raw, setRaw] = useState<string>("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [errMsg, setErrMsg] = useState<string | null>(null);
@@ -56,9 +63,19 @@ export function EncryptedInput(props: EncryptedInputProps): JSX.Element {
 
     let asBig: bigint;
     try {
-      asBig = BigInt(raw.trim());
+      // Allow decimal inputs (e.g. "15" or "1.5") when decimals prop is set;
+      // require pure integer otherwise.
+      if (typeof decimals === "number" && decimals > 0) {
+        const [intPart, fracRaw = ""] = raw.trim().split(".");
+        if (!/^\d+$/.test(intPart ?? "")) throw new Error("non-numeric");
+        if (fracRaw && !/^\d+$/.test(fracRaw)) throw new Error("non-numeric fraction");
+        const frac = (fracRaw + "0".repeat(decimals)).slice(0, decimals);
+        asBig = BigInt((intPart ?? "0") + frac);
+      } else {
+        asBig = BigInt(raw.trim());
+      }
     } catch {
-      setErrMsg(`"${raw}" is not an integer`);
+      setErrMsg(`"${raw}" is not a valid number`);
       setPhase("error");
       return;
     }

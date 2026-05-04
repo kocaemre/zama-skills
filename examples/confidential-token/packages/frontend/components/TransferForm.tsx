@@ -159,6 +159,7 @@ export function TransferForm() {
                 contractAddress={TOKEN_ADDRESS}
                 signerAddress={address}
                 type="euint64"
+                decimals={TOKEN_DECIMALS}
                 onEncrypted={(out) => setEncrypted(out)}
                 placeholder="e.g. 10"
                 className="encrypted-input-wrapper"
