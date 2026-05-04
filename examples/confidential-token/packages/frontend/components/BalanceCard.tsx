@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDecrypted } from "@zama/hooks/useDecrypted";
+import { useFhevmInstance } from "@zama/lib/fhe";
 import {
   TOKEN_ABI,
   TOKEN_ADDRESS,
@@ -37,6 +38,11 @@ import {
 
 export function BalanceCard() {
   const { address, isConnected } = useAccount();
+  // Initialise the fhEVM instance (singleton, cached). useDecrypted's
+  // getFhevmInstance() relies on this hook firing somewhere in the React tree
+  // before the user requests a decrypt — without it the lookup throws
+  // "no cached instance".
+  useFhevmInstance();
   const addressConfigured = isTokenAddressConfigured();
 
   // Read the encrypted balance handle. `confidentialBalanceOf` returns a

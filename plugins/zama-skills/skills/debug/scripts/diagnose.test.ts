@@ -20,9 +20,9 @@ const __dirname = dirname(__filename);
 // ---------------- patterns catalog ----------------
 
 describe("patterns catalog", () => {
-  it("registers exactly 11 patterns (extend deliberately)", () => {
-    expect(PATTERN_COUNT).toBe(11);
-    expect(PATTERNS.length).toBe(11);
+  it("registers exactly 12 patterns (extend deliberately)", () => {
+    expect(PATTERN_COUNT).toBe(12);
+    expect(PATTERNS.length).toBe(12);
   });
 
   it("each pattern has stable structure", () => {
@@ -65,6 +65,8 @@ const SAMPLES: Record<string, string> = {
     "FetchError: relayer 502 Bad Gateway when calling https://relayer.testnet.zama.cloud/v1/decrypt",
   "wagmi-undefined-readcontract":
     "ContractFunctionExecutionError: The contract function \"balanceOf\" reverted. Function selector 0xabcdef not found on ABI.",
+    "fhe-no-cached-instance":
+    "[fhe-wagmi] no cached instance — call useFhevmInstance() inside a React component first to initialise.",
   "wagmi-abi-artifact-shape":
     "Uncaught (in promise) TypeError: r.filter is not a function\n    at writeContract (chunk-XYZ.js:1:99)",
   "zama-config-not-found":

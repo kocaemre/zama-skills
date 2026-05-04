@@ -359,6 +359,7 @@ If pre-flight detects `@typechain/ethers-v5` or `ethers@^5`, **refuse to generat
 - The 4 status string literals (`idle`, `requesting`, `decrypted`, `error`) appear verbatim in `useDecrypted.ts` so callers can pattern-match them.
 - The `EncryptedInput` component bounds-checks the numeric value against the chosen `euint*` type before encrypting (T-04-24 mitigation: prevents silent overflow).
 - The chainId guard in `fhe.ts` warns (does not throw) on chainId mismatch, since `window.ethereum` may settle late (T-04-22 mitigation).
+- **Any component that renders `useDecrypted` MUST also call `useFhevmInstance()` at the top of the component tree** (or in a parent / Providers wrapper). `useDecrypted` calls the no-args `getFhevmInstance()` compatibility wrapper which only returns a *cached* instance — `useFhevmInstance()` is what actually initialises and caches it from the wagmi wallet client. Forgetting this throws `[fhe-wagmi] no cached instance — call useFhevmInstance() inside a React component first to initialise.` at runtime. (See `/zama-debug` pattern `fhe-no-cached-instance` for diagnosis.)
 
 
 ## Closing Summary

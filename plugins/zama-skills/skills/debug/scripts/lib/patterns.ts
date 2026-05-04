@@ -162,6 +162,20 @@ export const PATTERNS: DebugPattern[] = [
     reference: "context7 /zama-ai/fhevm-hardhat-template topic=deploy",
   },
   {
+    name: "fhe-no-cached-instance",
+    label: "useDecrypted error: no cached instance",
+    pattern: /(\[fhe-?wagmi\]|fhe).*no cached instance|getFhevmInstance.*no cached instance|call useFhevmInstance/i,
+    cause:
+      "`useDecrypted` calls `getFhevmInstance()` (the no-args compatibility wrapper) which only returns a cached instance — it does NOT initialise one. The fhEVM instance is initialised by the React hook `useFhevmInstance()` (which reads the wagmi wallet client). If no component in the tree calls `useFhevmInstance()` before the user clicks decrypt, the lookup throws this error.",
+    fix: [
+      "In the component (or a parent) that renders `useDecrypted`, also call `useFhevmInstance()` once at the top:",
+      'import { useFhevmInstance } from "@zama/lib/fhe";',
+      "useFhevmInstance(); // singleton — fires once, caches the instance",
+      "Alternative: hoist `useFhevmInstance()` into your top-level Providers wrapper so every page gets a ready instance automatically.",
+    ],
+    reference: "context7 /zama-ai/fhevm topic=relayer-sdk + fhe.ts.tpl in /zama-frontend output",
+  },
+  {
     name: "wagmi-abi-artifact-shape",
     label: "wagmi runtime: r.filter is not a function (ABI artifact shape)",
     pattern: /(r\.filter is not a function|abi\.filter is not a function|filter is not a function)/i,

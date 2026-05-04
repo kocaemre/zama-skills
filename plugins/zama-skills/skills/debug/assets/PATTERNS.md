@@ -1,6 +1,6 @@
 # /zama-debug — Pattern Catalog
 
-Patterns registered: **11**
+Patterns registered: **12**
 
 This catalog is the human-readable mirror of `scripts/lib/patterns.ts`. CI
 asserts that every entry in `patterns.ts` has a matching `### <name>`
@@ -143,6 +143,22 @@ Each entry: regex hint → likely cause → concrete fix → reference.
 **Reference:** context7 `/zama-ai/fhevm-hardhat-template` `topic=deploy`
 
 ---
+
+### fhe-no-cached-instance
+
+**Trigger:** Runtime error in browser: `[fhe-wagmi] no cached instance — call useFhevmInstance() inside a React component first to initialise.`
+
+**Cause:** `useDecrypted` calls `getFhevmInstance()` (no-args compatibility wrapper) which only returns a cached instance. The fhEVM instance is initialised by the React hook `useFhevmInstance()` reading the wagmi wallet client. If no component fires `useFhevmInstance()` before the user clicks decrypt, the lookup throws.
+
+**Fix:**
+1. In the component (or a parent) that renders `useDecrypted`, also call:
+   ```ts
+   import { useFhevmInstance } from "@zama/lib/fhe";
+   useFhevmInstance(); // singleton — fires once, caches the instance
+   ```
+2. Or hoist `useFhevmInstance()` into your top-level Providers wrapper so every page gets a ready instance automatically.
+
+**Reference:** context7 `/zama-ai/fhevm` `topic=relayer-sdk` + `fhe.ts.tpl` in `/zama-frontend` output
 
 ### wagmi-abi-artifact-shape
 
