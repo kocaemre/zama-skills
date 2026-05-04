@@ -98,11 +98,11 @@ describe("generateAll — write all 5 generic docs", () => {
     writtenPaths = await generateAll({ outDir });
   });
 
-  it("Test 6: writes 8 files named after the skills (init/contract/test/deploy/frontend/design/audit/debug)", () => {
-    expect(writtenPaths).toHaveLength(8);
+  it("Test 6: writes 9 files named after the skills (init/contract/test/deploy/frontend/design/audit/debug/doctor)", () => {
+    expect(writtenPaths).toHaveLength(9);
     const names = readdirSync(outDir).sort();
     expect(names).toEqual(
-      ["audit.md", "contract.md", "debug.md", "deploy.md", "design.md", "frontend.md", "init.md", "test.md"].sort(),
+      ["audit.md", "contract.md", "debug.md", "deploy.md", "design.md", "doctor.md", "frontend.md", "init.md", "test.md"].sort(),
     );
     for (const name of names) {
       expect(existsSync(join(outDir, name))).toBe(true);

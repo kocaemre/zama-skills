@@ -8,12 +8,24 @@
 
 **Differentiator:** Every generated line is verified live against official Zama documentation via [context7](https://github.com/upstash/context7) MCP — `/zama-ai/fhevm` (1,772 snippets), `/zama-ai/fhevm-hardhat-template`, `/websites/openzeppelin_confidential-contracts`. **Zero hallucinated APIs.**
 
+## Prerequisites
+
+| Tool | Why | Install |
+|------|-----|---------|
+| Node.js >= 20 | Runtime for skill scripts | [nvm](https://github.com/nvm-sh/nvm) → `nvm install 20` |
+| pnpm 10+ | Package manager (skill-generated projects use it) | `npm install -g pnpm@10` |
+| `context7` MCP | **REQUIRED** — live Zama / OZ Confidential docs (anti-hallucination) | `claude mcp add context7 -- npx -y @upstash/context7-mcp` |
+| `magic` MCP (21st.dev) | RECOMMENDED — better UI scaffolds for `/zama-frontend` and `/zama-design` | `claude mcp add magic -- npx -y @21st-dev/magic` |
+
+After install, verify with **`/zama-doctor`** — it checks every requirement and prints fix commands for whatever is missing.
+
 ## Install
 
 ```bash
 # In Claude Code:
 /plugin marketplace add github.com/kocaemre/zama-skills
 /plugin install zama-skills@zama-skills
+/zama-doctor                     # confirm Node/pnpm/context7/magic are ready
 ```
 
 Fallback for non-Claude-Code agents or scripted setup:
@@ -101,7 +113,7 @@ Produces `DESIGN.md` (contract architecture + ACL strategy per actor + decryptio
 
 ---
 
-## What you get — 8 skills
+## What you get — 9 skills
 
 | Slash command | When it runs | What it does |
 |---------------|--------------|--------------|
@@ -110,9 +122,10 @@ Produces `DESIGN.md` (contract architecture + ACL strategy per actor + decryptio
 | `/zama-skills:test` | "test fhevm", "mock encrypted input", "decrypt assertion", "sepolia integration test" | Generates mock + Sepolia integration tests with `@fhevm/hardhat-plugin`, decrypt assertions, HCU-budget warnings |
 | `/zama-skills:deploy` | manual only — explicit `/zama-skills:deploy` invocation; never auto-triggers | Deploys to Sepolia + verifies on Etherscan + auto-registers Confidential Token Registry; pulls live addresses, never pins |
 | `/zama-skills:frontend` | "fhevm frontend", "relayer sdk", "useDecrypted"; editing `src/` or `app/` in fhevm project | Wires `@zama-fhe/relayer-sdk`, `useDecrypted` hook with relayer UX states, ethers v6 + typechain, encrypted-input components |
-| `/zama-skills:design` | "fikrim var", "design my dApp", "plan a confidential auction", before any scaffolding | Reads your use-case, queries context7 against `/zama-ai/fhevm` + OZ Confidential, produces `DESIGN.md` (contract architecture + ACL strategy) and `UI-WIREFRAME.md` (component tree + 4-state UX flows) |
+| `/zama-skills:design` | "I have an idea", "design my dApp", "plan a confidential auction", before any scaffolding | Reads your use-case, queries context7 against `/zama-ai/fhevm` + OZ Confidential, produces `DESIGN.md` (contract architecture + ACL strategy) and `UI-WIREFRAME.md` (component tree + 4-state UX flows) |
 | `/zama-skills:audit` | "audit this contract", "check FHE bugs", post-`/zama-contract` review | Scans Solidity + TS for ACL gaps, cleartext leaks (require/event), HCU explosions (>12 FHE ops/fn), deprecated imports — exits 0/1/2 for CI |
 | `/zama-skills:debug` | "I got an FHE error", paste a stack trace | Matches your error against a 10+ pattern catalog (ACL revert, `initSDK undefined`, deprecated imports, HCU exceeded, SSR `indexedDB`, etc.) — returns root cause + fix command |
+| `/zama-skills:doctor` | "check zama setup", "what's missing", first-time install verification | Read-only diagnostic — checks Node, pnpm, git, `context7` MCP (required), `magic` MCP (recommended), Sepolia RPC reachability, plugin install status. Prints fix commands for whatever is missing. |
 
 `/zama-skills:deploy` has `disable-model-invocation: true` — Claude **will not** auto-deploy on its own. You must invoke it explicitly.
 

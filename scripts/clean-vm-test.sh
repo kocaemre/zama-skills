@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # zama-skills clean-VM smoke test
 # Simulates a fresh-environment install of the published `zama-skills` npm package
-# and asserts that all 8 SKILL.md bundles are copied into `.claude/skills/zama-skills/`.
+# and asserts that all 9 SKILL.md bundles are copied into `.claude/skills/zama-skills/`.
 #
 # Implements DIST-06 (clean-VM smoke verification).
 #
@@ -104,6 +104,7 @@ assert_path file ".claude/skills/zama-skills/frontend/SKILL.md"
 assert_path file ".claude/skills/zama-skills/design/SKILL.md"
 assert_path file ".claude/skills/zama-skills/audit/SKILL.md"
 assert_path file ".claude/skills/zama-skills/debug/SKILL.md"
+assert_path file ".claude/skills/zama-skills/doctor/SKILL.md"
 
 # PLUGIN-03 spot check — deploy SKILL must keep `disable-model-invocation: true`
 # after the npm round-trip. If a build step strips frontmatter, this catches it.
