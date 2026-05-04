@@ -458,7 +458,7 @@ The plugin is a single Claude Code marketplace at the repo root. Skill folder na
 
 ## Acknowledgements
 
-- [Zama](https://www.zama.ai) — fhEVM, FHE Solidity library, hardhat plugin, relayer SDK
+- [Zama](https://zama.org) — fhEVM, FHE Solidity library, hardhat plugin, relayer SDK
 - [OpenZeppelin](https://www.openzeppelin.com) — Confidential Contracts (ERC-7984)
 - [Anthropic](https://www.anthropic.com) — Claude Code skills + plugins format
 - [context7](https://github.com/upstash/context7) — live docs MCP that powers anti-hallucination
