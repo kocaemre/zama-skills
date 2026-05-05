@@ -29,10 +29,10 @@ Each entry: regex hint → likely cause → concrete fix → reference.
 
 **Trigger:** `TypeError: Cannot read properties of undefined (reading 'initSDK')`
 
-**Cause:** Two common cases: (a) loaded the SDK as a UMD `<script>` and called `window.fhevm.initSDK` before the tag finished evaluating; (b) Next.js / Remix SSR evaluates the SDK import on the server, where `initSDK` is undefined.
+**Cause:** Three common cases: (a) imported from `@zama-fhe/relayer-sdk/bundle` under a bundler — that subpath's exports are `window.relayerSDK.initSDK` (undefined unless a separate `<script>` tag preset `window.relayerSDK`); (b) loaded as a UMD `<script>` and called `window.fhevm.initSDK` before the tag finished evaluating; (c) Next.js / Remix SSR evaluates the SDK import on the server, where `initSDK` is undefined.
 
 **Fix:**
-1. Use the canonical browser ESM entry: `import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/bundle"` (or bare `@zama-fhe/relayer-sdk`).
+1. Use the canonical browser ESM entry: `import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/web"`. /web is self-contained for bundlers. NEVER use /bundle with a bundler — /bundle is for CDN-style `<script>` loading only.
 2. Wrap init in `useEffect`, or guard with `typeof window !== "undefined"`. For Next.js, mark the file `"use client"`.
 3. `rm -rf node_modules/.vite && npm run dev`.
 

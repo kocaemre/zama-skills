@@ -48,9 +48,9 @@ export const PATTERNS: DebugPattern[] = [
     label: "TypeError: Cannot read properties of undefined (reading 'initSDK')",
     pattern: /Cannot read propert(y|ies) of undefined \(reading ['\"]initSDK['\"]\)/i,
     cause:
-      "`initSDK` is undefined at call time. Two common causes: (a) the SDK is loaded as a UMD `<script>` tag and the page references `window.fhevm.initSDK` before the script finishes evaluating; (b) Server-Side Rendering (Next.js / Remix) evaluates a module that imports the SDK at top level — the WASM loader runs in the Node phase and is undefined when the client bundle re-imports.",
+      "`initSDK` is undefined at module load. Three common causes: (a) imported from `@zama-fhe/relayer-sdk/bundle` under a bundler — that subpath's exports are `window.relayerSDK.initSDK` (undefined unless a separate `<script>` tag preset `window.relayerSDK`); (b) the SDK is loaded as a UMD `<script>` and the page references `window.fhevm.initSDK` before the script finishes evaluating; (c) SSR (Next.js / Remix) evaluates a module that imports the SDK at top level — the WASM loader runs in the Node phase and is undefined when the client bundle re-imports.",
     fix: [
-      "Use the canonical browser ESM entry: `import { initSDK, createInstance, SepoliaConfig } from \"@zama-fhe/relayer-sdk/bundle\"` (or bare `@zama-fhe/relayer-sdk` if your bundler prefers ESM).",
+      "Use the canonical browser ESM entry: `import { initSDK, createInstance, SepoliaConfig } from \"@zama-fhe/relayer-sdk/web\"`. /web is self-contained — bundlers tree-shake real named exports. NEVER use /bundle with a bundler — /bundle is for CDN-style <script> loading only.",
       "Wrap initialization in `useEffect(() => { void initSDK(); }, [])` for React, or guard with `typeof window !== \"undefined\"` for SSR frameworks.",
       "If using Next.js: mark the file `\"use client\"` and create the SDK instance inside a Client Component.",
       "Restart the dev server so Vite/Webpack re-resolves the entry.",
@@ -68,7 +68,7 @@ export const PATTERNS: DebugPattern[] = [
     fix: [
       "$ npm uninstall fhevmjs",
       "$ npm install @zama-fhe/relayer-sdk@^0.4.2",
-      "Replace every `import ... from \"fhevmjs\"` with `import ... from \"@zama-fhe/relayer-sdk/bundle\"` (browser) or `/node` (Node).",
+      "Replace every `import ... from \"fhevmjs\"` with `import ... from \"@zama-fhe/relayer-sdk/web\"` (browser/bundler) or `/node` (Node).",
       "Re-check call sites — the API surface changed (e.g., `createInstance` signature).",
     ],
     reference: "https://www.npmjs.com/package/fhevmjs (deprecated)",

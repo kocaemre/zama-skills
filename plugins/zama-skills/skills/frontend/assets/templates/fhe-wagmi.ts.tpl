@@ -4,7 +4,13 @@
 // rather than the EIP-1193 injected provider. Use this when your app already manages
 // wallet state via wagmi.
 
-import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/bundle";
+// Subpath choice — IMPORTANT:
+//   /web    → self-contained ESM, fetches WASM at runtime (named exports work via bundler)
+//   /bundle → expects window.relayerSDK to be preset by a separate <script> tag (CDN style)
+// We use /web because we're bundled by Vite/webpack. /bundle would resolve all named
+// exports to `window.relayerSDK.X` — undefined when there's no preceding script tag —
+// which throws `Cannot read properties of undefined (reading 'initSDK')` at module load.
+import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/web";
 import { useEffect, useState } from "react";
 import { useWalletClient } from "wagmi";
 

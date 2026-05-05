@@ -4,7 +4,9 @@
 // rather than the EIP-1193 injected provider. Use this when your app already manages
 // wallet state via wagmi.
 
-import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/bundle";
+// /web (NOT /bundle) — see plugins/zama-skills/skills/frontend/assets/templates/fhe-wagmi.ts.tpl
+// /bundle resolves named exports to `window.relayerSDK.X` (undefined under bundlers) → TypeError.
+import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/web";
 import { useEffect, useState } from "react";
 import { useWalletClient } from "wagmi";
 

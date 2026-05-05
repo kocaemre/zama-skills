@@ -3,7 +3,13 @@
 // fhEVM relayer-sdk singleton — uses @zama-fhe/relayer-sdk per pinned-versions.json.
 // (The legacy frontend package was deprecated 2025-07-10; do not reintroduce it.)
 
-import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/bundle";
+// Subpath choice — IMPORTANT:
+//   /web    → self-contained ESM, fetches WASM at runtime (named exports work via bundler)
+//   /bundle → expects window.relayerSDK to be preset by a separate <script> tag (CDN style)
+// We use /web because we're bundled by Vite/webpack. /bundle would resolve all named
+// exports to `window.relayerSDK.X` — undefined when there's no preceding script tag —
+// which throws `Cannot read properties of undefined (reading 'initSDK')` at module load.
+import { initSDK, createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/web";
 
 declare global {
   interface Window {

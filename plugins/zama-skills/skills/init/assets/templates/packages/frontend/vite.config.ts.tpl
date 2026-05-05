@@ -5,7 +5,7 @@ import { resolve, dirname } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// @zama-fhe/relayer-sdk/bundle uses WebAssembly threads → SharedArrayBuffer →
+// @zama-fhe/relayer-sdk/web uses WebAssembly threads → SharedArrayBuffer →
 // requires Cross-Origin Isolation. Without these headers initSDK() fails
 // silently and every downstream getFhevmInstance() call throws "no cached
 // instance" / "Invalid public or private key".
