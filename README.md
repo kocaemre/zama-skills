@@ -12,6 +12,18 @@ On top of that, **`/zama-contract` refuses 12 forbidden cleartext-leak patterns*
 
 **Polished UI out of the box.** `/zama-frontend` reads your contract source, detects the variant (`token` / `voting` / `wrapper` / `auction`), and materializes a complete Tailwind-styled dApp — connect wallet, network indicator, encrypted-input + reveal panels, transaction status with Etherscan links, dark-mode-ready theme. No more bare `<button>` placeholders: the panels you ship are the panels the skill writes.
 
+---
+
+![zama-skills walkthrough](assets/zama.gif)
+
+[Watch the full video walkthrough](https://youtu.be/bI6gtkB-H2Y) (unlisted)
+&nbsp;&nbsp;·&nbsp;&nbsp;
+[Live dApp on Vercel](https://zama-skills.vercel.app)
+&nbsp;&nbsp;·&nbsp;&nbsp;
+[Verified contract on Sepolia](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code)
+
+---
+
 ## Prerequisites
 
 | Tool | Why | Install |
@@ -328,15 +340,9 @@ The CLI prints a warning if you pick `--scope personal` for a tool that won't ho
 
 ## Demo
 
-![zama-skills walkthrough](assets/zama.gif)
+The full walkthrough lives at the top of this README — GIF + video + live dApp + verified contract.
 
-[Watch the full video walkthrough](https://youtu.be/bI6gtkB-H2Y) (unlisted — accessible via this link only)
-&nbsp;&nbsp;·&nbsp;&nbsp;
-[Live dApp on Vercel](https://zama-skills.vercel.app)
-&nbsp;&nbsp;·&nbsp;&nbsp;
-[Verified contract on Sepolia Etherscan](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code)
-
-Walkthrough: `/plugin marketplace add` → `/zama-design` → `/zama-init` → `/zama-contract` → `/zama-deploy` (live Sepolia) → MetaMask decrypt on the live dApp.
+Pipeline shown: `/plugin marketplace add` → `/zama-design` → `/zama-init` → `/zama-contract` → `/zama-deploy` (live Sepolia) → MetaMask decrypt on the live dApp.
 
 ## Quick Start — pick your path
 
