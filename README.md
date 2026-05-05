@@ -328,11 +328,13 @@ The CLI prints a warning if you pick `--scope personal` for a tool that won't ho
 
 ## Demo
 
+[Watch the video walkthrough](https://youtu.be/bI6gtkB-H2Y) (unlisted — accessible via this link only)
+&nbsp;&nbsp;·&nbsp;&nbsp;
 [Live dApp on Vercel](https://zama-skills.vercel.app)
 &nbsp;&nbsp;·&nbsp;&nbsp;
 [Verified contract on Sepolia Etherscan](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code)
 
-Walkthrough: `/plugin marketplace add` → `/zama-design` → `/zama-init` → `/zama-contract` → `/zama-deploy` (live Sepolia) → MetaMask decrypt on the live dApp. A 2-minute screencast will be linked here once recorded.
+Walkthrough: `/plugin marketplace add` → `/zama-design` → `/zama-init` → `/zama-contract` → `/zama-deploy` (live Sepolia) → MetaMask decrypt on the live dApp.
 
 ## Quick Start — pick your path
 
