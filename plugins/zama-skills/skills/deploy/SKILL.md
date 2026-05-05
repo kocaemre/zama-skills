@@ -46,7 +46,7 @@ If a `magic` call would fail (only relevant for `/zama-frontend`, `/zama-init`, 
 
    - **Question**: "Install Magic MCP for richer UI components? (one-time, requires 21st.dev sign-in)"
    - **Options**:
-     - `Yes — install now`: run `claude mcp add magic -- npx -y @21st-dev/magic` via Bash, then tell the user to restart Claude Code so the new MCP is registered, and continue this run with the built-in templates (Magic becomes available on the *next* invocation).
+     - `Yes — install now`: run `claude mcp add magic -- npx -y @21st-dev/magic` via Bash, then tell the user **verbatim**: *"Restart Claude Code so the new MCP loads — press `Ctrl+D` (or type `/exit`) in this session, then run `claude` again in your terminal. Magic will be active on the next invocation."* Continue this run with the built-in templates regardless — MCP servers are loaded only at Claude Code startup, so the current session can't see Magic even after the install command succeeds.
      - `Skip`: continue without Magic — the built-in Tailwind primitives are already production-quality.
 
 3. After the answer, continue UI generation regardless. Do NOT block UI work on Magic — the templates produce a complete, polished dApp on their own.
