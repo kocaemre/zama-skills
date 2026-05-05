@@ -328,7 +328,9 @@ The CLI prints a warning if you pick `--scope personal` for a tool that won't ho
 
 ## Demo
 
-[Watch the video walkthrough](https://youtu.be/bI6gtkB-H2Y) (unlisted — accessible via this link only)
+![zama-skills walkthrough](assets/zama.gif)
+
+[Watch the full video walkthrough](https://youtu.be/bI6gtkB-H2Y) (unlisted — accessible via this link only)
 &nbsp;&nbsp;·&nbsp;&nbsp;
 [Live dApp on Vercel](https://zama-skills.vercel.app)
 &nbsp;&nbsp;·&nbsp;&nbsp;
