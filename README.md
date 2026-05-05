@@ -10,6 +10,8 @@
 
 On top of that, **`/zama-contract` refuses 12 forbidden cleartext-leak patterns** at generation time — `require(FHE.decrypt(x))`, `if (FHE.decrypt(x))`, comparing `euint` handles with `==`/`<`/`>`, branching on cleartext `ebool`, decrypting storage slots, and others. The static guard fires even when the user explicitly asks for the pattern, and `/zama-audit` re-runs the same checks plus ACL-grant verification across the whole repo.
 
+**Polished UI out of the box.** `/zama-frontend` reads your contract source, detects the variant (`token` / `voting` / `wrapper` / `auction`), and materializes a complete Tailwind-styled dApp — connect wallet, network indicator, encrypted-input + reveal panels, transaction status with Etherscan links, dark-mode-ready theme. No more bare `<button>` placeholders: the panels you ship are the panels the skill writes.
+
 ## Prerequisites
 
 | Tool | Why | Install |

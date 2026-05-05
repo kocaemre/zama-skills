@@ -92,16 +92,26 @@ describe("generateFrontend", () => {
     if (root && existsSync(root)) rmSync(root, { recursive: true, force: true });
   });
 
-  it("writes the 3 expected files (vanilla, no wagmi)", async () => {
+  it("writes the FHE pipeline + UI primitives + App on a vanilla custom variant", async () => {
     root = makeFrontendFixture(VALID_DEPS, VALID_DEV);
     const r = await generateFrontend({ workspaceRoot: root, contract: "Counter" });
     expect(r.ok).toBe(true);
-    expect(r.written.map((p) => p.replace(root + "/", ""))).toEqual([
-      "packages/frontend/src/lib/fhe.ts",
-      "packages/frontend/src/hooks/useDecrypted.ts",
-      "packages/frontend/src/components/EncryptedInput.tsx",
-    ]);
+    const rels = r.written.map((p) => p.replace(root + "/", ""));
+    // Pipeline plumbing
+    expect(rels).toContain("packages/frontend/src/lib/fhe.ts");
+    expect(rels).toContain("packages/frontend/src/lib/utils.ts");
+    expect(rels).toContain("packages/frontend/src/hooks/useDecrypted.ts");
+    expect(rels).toContain("packages/frontend/src/components/EncryptedInput.tsx");
+    // UI primitives
+    for (const f of ["Button", "Card", "Input", "Badge", "TxStatus", "Header", "HandleReveal"]) {
+      expect(rels).toContain(`packages/frontend/src/ui/${f}.tsx`);
+    }
+    // App composition
+    expect(rels).toContain("packages/frontend/src/wagmi.ts");
+    expect(rels).toContain("packages/frontend/src/App.tsx");
     for (const p of r.written) expect(existsSync(p)).toBe(true);
+    // No contracts/contracts → variant fell back to "custom" → no panels.
+    expect(r.variant).toBe("custom");
   });
 
   it("emits the wagmi shim into fhe.ts when withWagmi=true", async () => {
@@ -186,5 +196,141 @@ describe("generateFrontend", () => {
     const r = await generateFrontend({ workspaceRoot: root, contract: "Counter" });
     expect(r.ok).toBe(false);
     expect(r.error).toMatch(/ethers/);
+  });
+});
+
+// ─── Variant detection + panel materialization ──────────────────────────────
+
+function writeContractSource(root: string, name: string, body: string): void {
+  const dir = join(root, "packages", "contracts", "contracts");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, `${name}.sol`), body);
+}
+
+describe("generateFrontend — variant detection", () => {
+  let root: string;
+  afterEach(() => {
+    if (root && existsSync(root)) rmSync(root, { recursive: true, force: true });
+  });
+
+  it("detects token variant from ERC7984 import → Mint+Balance+Transfer panels", async () => {
+    root = makeFrontendFixture(VALID_DEPS, VALID_DEV);
+    writeContractSource(
+      root,
+      "MyToken",
+      'import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";\ncontract MyToken is ERC7984 {}',
+    );
+    writeFileSync(join(root, "packages/frontend/src/abis/MyToken.json"), JSON.stringify({ abi: [] }));
+    const r = await generateFrontend({ workspaceRoot: root, contract: "MyToken" });
+    expect(r.ok).toBe(true);
+    expect(r.variant).toBe("token");
+    const rels = r.written.map((p) => p.replace(root + "/", ""));
+    expect(rels).toContain("packages/frontend/src/panels/MintPanel.tsx");
+    expect(rels).toContain("packages/frontend/src/panels/BalancePanel.tsx");
+    expect(rels).toContain("packages/frontend/src/panels/TransferPanel.tsx");
+    expect(rels).not.toContain("packages/frontend/src/panels/DelegatePanel.tsx");
+    expect(rels).not.toContain("packages/frontend/src/panels/WrapPanel.tsx");
+  });
+
+  it("detects voting variant from ERC7984Votes → 5 panels", async () => {
+    root = makeFrontendFixture(VALID_DEPS, VALID_DEV);
+    writeContractSource(
+      root,
+      "VotingToken",
+      'import {ERC7984Votes} from "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984Votes.sol";\ncontract VotingToken is ERC7984Votes {}',
+    );
+    writeFileSync(join(root, "packages/frontend/src/abis/VotingToken.json"), JSON.stringify({ abi: [] }));
+    const r = await generateFrontend({ workspaceRoot: root, contract: "VotingToken" });
+    expect(r.ok).toBe(true);
+    expect(r.variant).toBe("voting");
+    const rels = r.written.map((p) => p.replace(root + "/", ""));
+    for (const p of ["Mint", "Balance", "Transfer", "Delegate", "Votes"]) {
+      expect(rels).toContain(`packages/frontend/src/panels/${p}Panel.tsx`);
+    }
+  });
+
+  it("detects wrapper variant → Wrap+Unwrap+Balance", async () => {
+    root = makeFrontendFixture(VALID_DEPS, VALID_DEV);
+    writeContractSource(
+      root,
+      "USDCWrapper",
+      'import {ERC7984ERC20Wrapper} from "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";\ncontract USDCWrapper is ERC7984ERC20Wrapper {}',
+    );
+    writeFileSync(join(root, "packages/frontend/src/abis/USDCWrapper.json"), JSON.stringify({ abi: [] }));
+    const r = await generateFrontend({ workspaceRoot: root, contract: "USDCWrapper" });
+    expect(r.ok).toBe(true);
+    expect(r.variant).toBe("wrapper");
+    const rels = r.written.map((p) => p.replace(root + "/", ""));
+    expect(rels).toContain("packages/frontend/src/panels/WrapPanel.tsx");
+    expect(rels).toContain("packages/frontend/src/panels/UnwrapPanel.tsx");
+    expect(rels).toContain("packages/frontend/src/panels/BalancePanel.tsx");
+  });
+
+  it("detects auction variant → BidPanel only", async () => {
+    root = makeFrontendFixture(VALID_DEPS, VALID_DEV);
+    writeContractSource(
+      root,
+      "Auction",
+      "contract SealedBidAuction { function bid(bytes calldata enc, bytes calldata proof) external {} }",
+    );
+    writeFileSync(join(root, "packages/frontend/src/abis/Auction.json"), JSON.stringify({ abi: [] }));
+    const r = await generateFrontend({ workspaceRoot: root, contract: "Auction" });
+    expect(r.ok).toBe(true);
+    expect(r.variant).toBe("auction");
+    const rels = r.written.map((p) => p.replace(root + "/", ""));
+    expect(rels).toContain("packages/frontend/src/panels/BidPanel.tsx");
+    expect(rels).not.toContain("packages/frontend/src/panels/MintPanel.tsx");
+  });
+
+  it("explicit --variant override beats auto-detection", async () => {
+    root = makeFrontendFixture(VALID_DEPS, VALID_DEV);
+    writeContractSource(root, "Counter", "contract Counter {}");
+    writeFileSync(join(root, "packages/frontend/src/abis/Counter.json"), JSON.stringify({ abi: [] }));
+    const r = await generateFrontend({
+      workspaceRoot: root,
+      contract: "Counter",
+      variant: "voting",
+    });
+    expect(r.ok).toBe(true);
+    expect(r.variant).toBe("voting");
+  });
+
+  it("App.tsx wires the correct panels and contract address", async () => {
+    root = makeFrontendFixture(VALID_DEPS, VALID_DEV);
+    writeContractSource(
+      root,
+      "Tok",
+      'import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";\ncontract Tok is ERC7984 {}',
+    );
+    writeFileSync(join(root, "packages/frontend/src/abis/Tok.json"), JSON.stringify({ abi: [] }));
+    const r = await generateFrontend({
+      workspaceRoot: root,
+      contract: "Tok",
+      contractAddress: "0xdeadbeef0000000000000000000000000000beef",
+    });
+    expect(r.ok).toBe(true);
+    const app = readFileSync(join(root, "packages/frontend/src/App.tsx"), "utf8");
+    expect(app).toMatch(/0xdeadbeef0000000000000000000000000000beef/);
+    expect(app).toMatch(/import \{ MintPanel \} from "@\/panels\/MintPanel"/);
+    expect(app).toMatch(/import \{ TransferPanel \} from "@\/panels\/TransferPanel"/);
+    expect(app).toMatch(/import abiJson from "@\/abis\/Tok\.json"/);
+    expect(app).not.toMatch(/import \{ DelegatePanel \}/);
+  });
+
+  it("panel templates use Tailwind classes + TxStatus", async () => {
+    root = makeFrontendFixture(VALID_DEPS, VALID_DEV);
+    writeContractSource(
+      root,
+      "T",
+      'import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";\ncontract T is ERC7984 {}',
+    );
+    writeFileSync(join(root, "packages/frontend/src/abis/T.json"), JSON.stringify({ abi: [] }));
+    await generateFrontend({ workspaceRoot: root, contract: "T" });
+    const mint = readFileSync(join(root, "packages/frontend/src/panels/MintPanel.tsx"), "utf8");
+    expect(mint).toMatch(/from "@\/ui\/Card"/);
+    expect(mint).toMatch(/from "@\/ui\/TxStatus"/);
+    // Tailwind class hint
+    const header = readFileSync(join(root, "packages/frontend/src/ui/Header.tsx"), "utf8");
+    expect(header).toMatch(/sticky top-0|backdrop-blur/);
   });
 });

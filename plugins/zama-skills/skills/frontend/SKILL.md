@@ -38,22 +38,17 @@ Before invoking any `mcp__context7__*` or `mcp__magic__*` tool, verify the tool 
 
 3. Wait for the user to confirm install. Re-attempt the call. If it still fails, tell the user to run `/zama-doctor` for a full diagnostic.
 
-If a `magic` call would fail (only relevant for `/zama-frontend` and `/zama-design` UI generation):
+If a `magic` call would fail (only relevant for `/zama-frontend`, `/zama-init`, and `/zama-design` UI generation):
 
-1. Do NOT stop — magic is optional. Continue with hand-authored shadcn components.
-2. Tell the user (once, near the start of UI generation):
+1. Do NOT stop — magic is optional. The skills ship a complete Tailwind + shadcn-style scaffold without it (see `assets/templates/ui/` and `assets/templates/panels/`).
+2. Use `AskUserQuestion` **once per session** near the start of UI generation:
 
-   ```
-   Magic MCP (21st.dev) is not installed. UI components will be hand-authored
-   using shadcn primitives. For higher-quality, design-system-aware components,
-   install Magic:
+   - **Question**: "Install Magic MCP for richer UI components? (one-time, requires 21st.dev sign-in)"
+   - **Options**:
+     - `Yes — install now`: run `claude mcp add magic -- npx -y @21st-dev/magic` via Bash, then tell the user to restart Claude Code so the new MCP is registered, and continue this run with the built-in templates (Magic becomes available on the *next* invocation).
+     - `Skip`: continue without Magic — the built-in Tailwind primitives are already production-quality.
 
-       claude mcp add magic -- npx -y @21st-dev/magic
-
-   Then restart Claude Code and re-run this skill.
-   ```
-
-3. Continue without magic.
+3. After the answer, continue UI generation regardless. Do NOT block UI work on Magic — the templates produce a complete, polished dApp on their own.
 
 ## No fallback for context7
 
@@ -289,15 +284,44 @@ Confirm the exact signature for the chosen path via context7 `/zama-ai/fhevm` `t
 
 # /zama-skills:frontend — Workflow
 
-Wires `@zama-fhe/relayer-sdk` into a React frontend (typically `packages/frontend/` from `/zama-init`). Outputs **3 files**:
+Wires `@zama-fhe/relayer-sdk` into a React frontend (typically `packages/frontend/` from `/zama-init`) **and** scaffolds a complete Tailwind-styled UI — connect, panels, transactions, decrypt flows — from one command.
+
+Output is grouped into three layers:
+
+**1. FHE pipeline** (always):
 
 | Path | Purpose |
 |------|---------|
 | `packages/frontend/src/lib/fhe.ts` | `getFhevmInstance()` singleton on top of `initSDK()` + `createInstance({...SepoliaConfig, network: window.ethereum})` |
+| `packages/frontend/src/lib/utils.ts` | `cn()` class-merge helper + `shortAddr()` / `shortHandle()` |
 | `packages/frontend/src/hooks/useDecrypted.ts` | React hook surfacing 4 explicit states: `idle | requesting | decrypted | error` |
 | `packages/frontend/src/components/EncryptedInput.tsx` | Controlled `<input>` that encrypts on blur via `instance.createEncryptedInput(...)` and emits `{ handle, inputProof }` |
 
-> If you opt into Wagmi+viem, `fhe.ts` is replaced by the wagmi shim (`fhe-wagmi.ts.tpl`) which derives `network` from `useWalletClient()` instead of `window.ethereum`.
+**2. UI primitives** (always — Tailwind + shadcn-style):
+
+| Path | Purpose |
+|------|---------|
+| `src/ui/Button.tsx` | Variant-based button (default / outline / ghost / destructive) |
+| `src/ui/Card.tsx` | Card + Header + Title + Description + Content + Footer |
+| `src/ui/Input.tsx` | Form input + Label |
+| `src/ui/Badge.tsx` | Status pill (success / warning / destructive variants) |
+| `src/ui/TxStatus.tsx` | Transaction status row — pending / mining / confirmed / failed + Etherscan link |
+| `src/ui/Header.tsx` | Sticky app header — wallet connect, network indicator, contract link |
+| `src/ui/HandleReveal.tsx` | Encrypted-handle reveal control with relayer "5–10s" UX state |
+| `src/wagmi.ts` | Wagmi config (Sepolia + injected connector) |
+| `src/App.tsx` | Wires `WagmiProvider` + `QueryClientProvider` and composes the variant's panels |
+
+**3. Variant-specific panels** (driven by the contract source):
+
+| Variant | Detected from | Panels |
+|---------|---------------|--------|
+| `token` | imports `ERC7984` | `Mint` + `Balance` + `Transfer` |
+| `voting` | imports `ERC7984Votes` or `VotesConfidential` | `Mint` + `Balance` + `Transfer` + `Delegate` + `Votes` |
+| `wrapper` | imports `ERC7984ERC20Wrapper` | `Wrap` + `Unwrap` + `Balance` |
+| `auction` | filename / source mentions `SealedBidAuction` or `bid(` | `Bid` |
+| `custom` | nothing matched | (none — App.tsx renders an empty-state card) |
+
+> If you opt into Wagmi+viem, `fhe.ts` is replaced by the wagmi shim (`fhe-wagmi.ts.tpl`) which derives `network` from `useWalletClient()` instead of `window.ethereum`. Either way, the generated panels rely on wagmi for wallet state — `wagmi.ts` is materialized regardless.
 
 ## When to run
 
@@ -341,16 +365,20 @@ Call the generator from the skill bundle:
 tsx ${CLAUDE_SKILL_DIR}/scripts/generate.ts \
   --contract <Name> \
   [--with-wagmi] \
-  [--force]
+  [--force] \
+  [--variant <token|voting|wrapper|auction|custom>] \
+  [--contract-address 0x…]
 ```
 
 The generator:
 
 1. Re-runs preflight (defense in depth).
-2. Materializes the 3 templates with `<Contract>` substituted into the `@/abis/<Contract>.json` import path.
-3. Post-greps **every emitted file** for the literal token `fhevmjs` and aborts with non-zero exit if any match (deprecated package guardrail — see `shared/deprecated-imports.json`).
-4. Refuses to overwrite existing files unless `--force` is passed.
-5. Prints written paths to stdout.
+2. Detects the **variant** by scanning `packages/contracts/contracts/*.sol` for the marker imports (table above). `--variant` overrides detection.
+3. Materializes the FHE pipeline + UI primitives + wagmi config + variant-specific panels + a fully-wired `App.tsx`.
+4. Substitutes the contract name into `@/abis/<Contract>.json` and the contract address into `App.tsx` (placeholder if `--contract-address` not supplied — update before deploying).
+5. Post-greps **every emitted file** for the literal token `fhevmjs` and aborts with non-zero exit if any match (deprecated package guardrail).
+6. Refuses to overwrite existing files unless `--force` is passed.
+7. Prints written paths and detected variant to stdout.
 
 ### Step 5 — Closing summary
 

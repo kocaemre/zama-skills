@@ -99,22 +99,17 @@ Before invoking any `mcp__context7__*` or `mcp__magic__*` tool, verify the tool 
 
 3. Wait for the user to confirm install. Re-attempt the call. If it still fails, tell the user to run `/zama-doctor` for a full diagnostic.
 
-If a `magic` call would fail (only relevant for `/zama-frontend` and `/zama-design` UI generation):
+If a `magic` call would fail (only relevant for `/zama-frontend`, `/zama-init`, and `/zama-design` UI generation):
 
-1. Do NOT stop — magic is optional. Continue with hand-authored shadcn components.
-2. Tell the user (once, near the start of UI generation):
+1. Do NOT stop — magic is optional. The skills ship a complete Tailwind + shadcn-style scaffold without it (see `assets/templates/ui/` and `assets/templates/panels/`).
+2. Use `AskUserQuestion` **once per session** near the start of UI generation:
 
-   ```
-   Magic MCP (21st.dev) is not installed. UI components will be hand-authored
-   using shadcn primitives. For higher-quality, design-system-aware components,
-   install Magic:
+   - **Question**: "Install Magic MCP for richer UI components? (one-time, requires 21st.dev sign-in)"
+   - **Options**:
+     - `Yes — install now`: run `claude mcp add magic -- npx -y @21st-dev/magic` via Bash, then tell the user to restart Claude Code so the new MCP is registered, and continue this run with the built-in templates (Magic becomes available on the *next* invocation).
+     - `Skip`: continue without Magic — the built-in Tailwind primitives are already production-quality.
 
-       claude mcp add magic -- npx -y @21st-dev/magic
-
-   Then restart Claude Code and re-run this skill.
-   ```
-
-3. Continue without magic.
+3. After the answer, continue UI generation regardless. Do NOT block UI work on Magic — the templates produce a complete, polished dApp on their own.
 
 ## No fallback for context7
 

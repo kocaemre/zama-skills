@@ -11,9 +11,13 @@
   "dependencies": {
     "@tanstack/react-query": "^5.59.0",
     "@zama-fhe/relayer-sdk": "<!-- @pin:@zama-fhe/relayer-sdk -->",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
     "ethers": "<!-- @pin:ethers -->",
+    "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.4",
     "viem": "^2.21.0",
     "wagmi": "^2.13.0"
   },
@@ -21,7 +25,10 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
-    "vite": "^5.4.0",
-    "typescript": "^5.9.3"
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.0"
   }
 }

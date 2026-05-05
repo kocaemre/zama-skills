@@ -169,9 +169,13 @@ const REQUIRED_INIT_ASSETS: readonly string[] = [
   `${INIT_ASSETS_REL}/templates/packages/contracts/tsconfig.json.tpl`,
   // Frontend package
   `${INIT_ASSETS_REL}/templates/packages/frontend/package.json.tpl`,
+  `${INIT_ASSETS_REL}/templates/packages/frontend/tsconfig.json.tpl`,
   `${INIT_ASSETS_REL}/templates/packages/frontend/vite.config.ts.tpl`,
   `${INIT_ASSETS_REL}/templates/packages/frontend/vercel.json.tpl`,
   `${INIT_ASSETS_REL}/templates/packages/frontend/index.html.tpl`,
+  `${INIT_ASSETS_REL}/templates/packages/frontend/tailwind.config.ts.tpl`,
+  `${INIT_ASSETS_REL}/templates/packages/frontend/postcss.config.js.tpl`,
+  `${INIT_ASSETS_REL}/templates/packages/frontend/src/index.css.tpl`,
   `${INIT_ASSETS_REL}/templates/packages/frontend/src/main.tsx.tpl`,
   `${INIT_ASSETS_REL}/templates/packages/frontend/src/App.tsx.tpl`,
   // Use-case seeds
