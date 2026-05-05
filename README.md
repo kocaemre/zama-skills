@@ -1,6 +1,6 @@
 # zama-skills
 
-> Zama Protocol skill pack for Claude Code — from an empty directory to a working confidential dApp in 30 minutes.
+> Zama Protocol skill pack for AI coding agents (Claude Code, Cursor, Windsurf, OpenCode, Codex, Aider, Continue) — from an empty directory to a working confidential dApp in 30 minutes.
 
 [![CI](https://github.com/kocaemre/zama-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/kocaemre/zama-skills/actions) [![npm](https://img.shields.io/npm/v/zama-skills?logo=npm&label=npm)](https://www.npmjs.com/package/zama-skills) [![Socket Security](https://socket.dev/api/badge/npm/package/zama-skills)](https://socket.dev/npm/package/zama-skills) [![Sepolia Verified](https://img.shields.io/badge/Sepolia-Verified-brightgreen?logo=ethereum)](https://sepolia.etherscan.io/address/0x04Bd105DE7a5D3297c3747cef90ac8b760136896#code) [![Vercel Live](https://img.shields.io/badge/Vercel-Live-black?logo=vercel)](https://zama-skills.vercel.app) <!-- @sync:vercel-url -->
 
